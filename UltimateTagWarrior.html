@@ -1,0 +1,346 @@
+<html>
+<head>
+	<title>Ultimate Tag Warrior by Christine Davis</title>
+
+	<style type="text/css">
+body {font-family:verdana; font-size:0.8em; line-height:1.5em; margin:50px;}
+xmp {font-size:1.5em;}
+	</style>
+</head>
+
+<body>
+<h1>Ultimate Tag Warrior 1.0</h1>
+<h3>A Wordpress plugin by Christine Davis</h3>
+
+<h5>Contents</h5>
+<ol>
+	<li><a href="#a">Are you ready, for ultimate tag warrior?</a></li>
+	<li><a href="#g">A quick overview</a></li>
+	<li><a href="#f">Updates</a></li>
+	<li><a href="#b">Installation</a></li>
+	<li><a href="#c">Updating your <strike>wardrobe</strike> theme</a></li>
+		<ol>
+			<li><a href="#ca">Tags on a post</a></li>
+			<li><a href="#cb">Popular tags</a></li>
+			<li><a href="#cc">Tag archive</a></li>
+			<li><a href="#cd">The tag page</a></li>
+			<li><a href="#ce">Tag cloud</a></li>
+		</ol>
+	<li><a href="#h">Tag Administration</a></li>
+	<li><a href="#i">Linking to Tags</a></li>
+	<li><a href="#d">API Reference</a></li>
+		<ol>
+			<li><a href="#da">ultimate_show_post_tags</a></li>
+			<li><a href="#db">ultimate_show_popular_tags</a></li>
+			<li><a href="#dc">ultimate_tag_archive</a></li>
+			<li><a href="#dh">ultimate_tag_cloud</a></li>
+			<li><a href="#dk">ultimate_get_posts</a></li>
+			<li><a href="#dd">ultimate_save_tags</a></li>
+			<li><a href="#de">ultimate_display_tag_widget</a></li>
+			<li><a href="#df">ultimate_tag_templates</a></li>
+			<li><a href="#dg">ultimate_rewrite_rules</a></li>
+			<li><a href="#di">function ultimate_tag_admin</a></li>
+			<li><a href="#dj">ultimate_admin_menus</a></li>
+		</ol>
+	<li><a href="#e">What else?</a></li>
+</ol>
+
+<ol>
+	<li>
+		<h4><a name="a"></a>Are you ready, for ultimate tag warrior?</h4>
+		<p>Ultimate tag warrior is not something to be undertaken lightly.  There are passages that are twisty, and all alike.  There may even be pong.  I'm pretty sure there are no sideways scrolling platform games.  Actually,  I don't know that there is pong or twisty passages either.  The point is,  ultimate tag warrior has a higher than average barrier to entry:  you need to be using Wordpress 1.5(+),  you need to be okay with modifying templates,  there's some URL rewriting,  not to mention database changes (There's a little guy to do that last one for you.  All you have to do is ask him. P.S. This is what happens in step four of the installation.  More on that, after step three of the installation.).</p>
+	</li>
+
+
+
+
+
+
+	<li>
+		<h4><a name="g"></a>A quick overview</h4>
+		<p>This document is getting long and scary.  This is an overview that tells you the basics of what you need to know if you've already got a pretty good handle on how to cram plugin functions into your wordpress install.</p>
+		<p>To install,  run the ultimate-tag-warrior-install.php.  This creates a table for tags and a table that maps tags to posts.  You only need to run this once - none of the upgrades change the database schema.  There's also a default tag.php template file for the default theme to be wrangled as you see fit.</p>
+		<p>To use,  there are four functions of interest:</p>
+		<dl>
+			<dt>ultimate_show_post_tags($separator="&nbsp;", $baseurl='/tag/', $notagmessage = "No Tags", $morelinks="")</dt>
+			<dd>Displays a list of tags associated with the current post.  $seperator seperates them, $baseurl is where the text of the tag links to, $notagmessage is displayed when there are no tags, and links to the urls specified in $morelinks are displayed as &raquo;s.  Usually, the $baseurl and $morelinks look something like "{somesite}/tags/".</dd>
+			<dt>ultimate_show_popular_tags($limit=10)</dt>
+			<dd>Displays a list of the most popular tags.  Tags are wrapped in &lt;li&gt; tags,  and include the number of matching posts.</dd>
+			<dt>ultimate_tag_cloud($order='tag', $direction='asc')</dt>
+			<dd>Display a space-separated list of tags in the specified order.  Tags are displayed as links to the tag page, and have css classes based on popularity.  "taglevel1" are most popular (20x more popular than the average),  and "taglevel7" are the least popular (less popular than the average).</dd>
+			<dt>ultimate_tag_archive($limit = 20, $postlimit=20)</dt>
+			<dd>Displays an archive-type page,  using tags.  The top $limit tags are retrieved and displayed in a table with the top $postlimit posts for that tag.  If there are more posts,  a "More from xxx..." link is included as well.  This behaves in a similar manor to a category archive plugin that I've also written (which is why it's in this plugin too).</dd>
+		</dl>
+		<p>As far as wrangling your tags;  if you go to the Manage menu in the administration side of wordpress,  there is a Tags menu which allows doing some basic administration of tags.  You can rename tags, and delete tags at this stage.</p>
+		<p>To view tagged postings,  go to /tag/{tagname} or /tags/{tagname} for a single tag;  or, you can use del.icio.us-esque syntax, and go to /tag(s)/{tag1}+{tag2}+...+{tagn} to get the intersection of a set of tags.</p>
+	</li>
+
+
+
+
+
+	<li>
+		<h4><a name="f"></a>Updates</h4>
+		<h5>Ch-Ch-Ch-Changes</h5>
+		<dl><dt>0.1</dt><dd>Initial Release</dd>
+			<dt>0.2</dt><dd>Couple of bug fixes<br />Addition of tag clouds<br />Addition of administration tools</dd>
+			<dt>1.0</dt><dd>Tag1+Tag2 syntax is supported for getting the intersection of N tags.<br />ultimate_show_post_tags now defaults to linking the text to the local tag page instead of technorati;  and allows specifying a list of base tag urls to link to</dd>
+		</dl>
+		<h5>Moving from version to version</h5>
+		<p>From 0.1 to 0.2</p>
+		<ul>
+			<li>Move the ultimate-tag-warrior.php file into /wp-content/plugins.</li>
+			<li>Drop in a tag cloud (but only if you want to)</li>
+			<li>That's it.  (If you like, you can take a moment to bask in the glory of tag management)</li>
+		</ul>
+
+		<p>From 0.2 to 1.0</p>
+		<ul>
+			<li>Move the ultimate-tag-warrior.php file into /wp-content/plugins.</li>
+			<li>Move the themes/default/tag.php file into /wp-content/thems/default/tag.php</li>
+			<li>If you have a custom tag.php file;  replace the old block at the top of the page with this sweet two liner: <xmp>global $posts, $id;
+ultimate_get_posts();</xmp></li>
+		</ul>
+	</li>
+
+
+
+
+
+	<li>
+		<h4><a name="b"></a>Installation</h4>
+		<p>There are six steps to enlightenment through ultimate tag warrior.</p>
+		<ol>
+			<li>Make a backup of your database.  In the unlikely event of everything turning into a sticky pile of goo,  you'll want one of these.  If you are a maverick installer,  you can skip this.  But don't say I didn't warn you if it turns into a sticky pile of goo!</li>
+			<li>Copy files into the right places.  There are three files that need to be in certain places.
+				<dl>
+					<dt>ultimate-tag-warrior.php</dt>
+					<dd>Copy this file to /wp-content/plugins/</dd>
+					<dt>ultimate-tag-warrior-install.php</dt>
+					<dd>Copy this file to /wp-content/plugins/ as well.  (Unless you want to copy it somewhere else.  That's cool too.  There's nothing special about it that requires it to be here.  If you do copy it somewhere else,  later on when I get you to run the code that lives in this file;  you're on your own.)</dd>
+					<dt>tag.php</dt>
+					<dd>Copy this file to /wp-content/themes/default/</dd>
+				</dl>
+			</li>
+			<li>Breathe in.  Breathe out.  Relax.  Congratulate yourself for making it this far.  Take a moment to prepare yourself for the next step.</li>
+			<li>In a web browser,  go to http://{yoursite}/wp-content/plugins/ultimate-tag-warrior-install.php which will get the little guy I talked about in the introduction to update the wordpress database with the tables needed for ultimate tag warrior.  Two tables are added tags and post2tag (Actually, the tables use the table prefix;  so in general, wp_tags and wp_post2tag are added;  but it could be blog_tags and blog_post2tag it all just depends on your setup).  Tags contains the tags,  and post2tag has the associations between tags and posts.</li>
+			<li>Next,  go to http://{yoursite}/wp-admin/plugins.php (the plugins admin page).  Somewhere on that list,  there ought to be an entry for ultimate tag warrior.  Now would be a good time to click the activate link.</li>
+			<li>Lastly,  go to http://{yoursite}/wp-admin/options-permalink.php and click the Update Permalink Structure button.  This will enable URL's of the form /tag/tagname.  You need to do this after you activate the plugin.</li>
+		</ol>
+
+		<p>That's all that needs to happen for tagging to start happening.  To be able to see the tags,  you'll need to make changes to your templates.  Luckilly,  the next section tells you what you need to know!</p>
+	</li>
+
+
+
+
+
+
+	<li>
+		<h4><a name="c"></a>Updating your <strike>wardrobe</strike> theme</h4>
+		<p>It turns out that ultimate tag warrior is like a three plugins rolled into one.</p>
+		<h5><a name="ca"></a>Show tags on a post</h5>
+		<p>In the index.php template, include a call to ultimate_show_post_tags</p>
+
+<xmp><p class="postmetadata">Posted in <?php the_category(', ') ?> <strong>|</strong> <?php edit_post_link('Edit','','<strong>|</strong>'); ?>
+<?php comments_popup_link('No Comments &#187;', '1 Comment &#187;', '% Comments &#187;'); ?></p></xmp>
+
+Could become...
+
+<xmp><p class="postmetadata">Posted in <?php the_category(', ') ?> <strong>|</strong> Tagged with <?php ultimate_show_post_tags(", ", '/tag/') ?> <strong>|</strong>
+<?php edit_post_link('Edit','','<strong>|</strong>'); ?>  <?php comments_popup_link('No Comments &#187;', '1 Comment &#187;', '% Comments &#187;'); ?></p></xmp>
+		<p>This is the minimum that I'd do.  However,  if you are mighty,  you might want to consider one (or both) of these next two ways to make your blog more taggy.
+
+		<h5><a name="cb"></a>Include a list of popular tags</h5>
+		<p>The most typical place to put this would be in the sidebar.  To display the most popular tags,  include something like this in your sidebar:</p>
+
+<xmp><li><h2>Popular Tags</h2>
+	<ul>
+	<?php ultimate_show_popular_tags(); ?>
+	</ul>
+</li></xmp>
+
+		<h5><a name="cc"></a>Include tags in the archives</h5>
+		<p>The third facet of tag display is the tag archive.  This sorta fits in the archives.php template (moreso if you're also using the category archive.  There's a calendar version on the way, I promise!).  You'll want to include something along the lines of this:</p>
+<xmp><h2>Archives by Tag:</h2>
+<ul>
+	<?php ultimate_tag_archive(); ?>
+</ul>
+</xmp>
+
+		<h5><a name="cd"></a>Change tag.php to match your style</h5>
+		<p>If the theme you use is significantly different from the default template,  then you're going to need to create a tag.php in your theme.  There are two ways to approach this (there could be others,  but,  well,  you know.):</p>
+		<p>1. Start with the default tag.php file,  and wrangle it to match the rest of the theme.</p>
+		<p>2. Start with a copy of index.php,  and poke in the bits needed to display items matching a tag.</p>
+		<p>Which ever way you choose,  there are three bits of code that need to be in the final template.</p>
+		<ol>
+			<li>Twp magical lines at the top of the template, but after the header:
+			<xmp>global $posts, $id;
+ultimate_get_posts();</xmp>
+			This code will populate the $posts variable with matching posts.</li>
+			<li>The if statement at the beginning of the main while loop<xmp><?php if($id <> "") { ?><? // Ultimate Tag Warrior needs this before the start of a post?>
+</xmp></li>
+			<li>The close brace at the end of the main while loop</li>
+		</ol>
+
+		<h5><a name="ce"></a>Tag cloud</h5>
+		<p>Perhaps you would like a tag cloud.  There are two parts to this:  updating a theme to include a call to the tag cloud function,  and adding CSS to style the tag cloud.</p>
+		<p>For a tag cloud ordered alphabetically,  include<xmp><?php ultimate_tag_cloud() ?></xmp></p>
+		<p>For a tag cloud ordered by tag popularity (most to least)<xmp><?php ultimate_tag_cloud("count","desc") ?></xmp></p>
+
+		<p>For the CSS;  you'll need to add some things to the style.css file.  What I've included in this example will vary the presentation using the size only.  By all means use colours or any other means you'd like to differentiate tag popularity.</p>
+		<xmp>.taglevel1 {font-size:22px}
+.taglevel2 {font-size:18px}
+.taglevel3 {font-size:16px}
+.taglevel4 {font-size:14px}
+.taglevel5 {font-size:12px}
+.taglevel6 {font-size:10px}
+.taglevel7 {font-size:8px}</xmp>
+	</li>
+
+
+
+
+
+	<li>
+		<h4><a name="h"></a>Tag Administration</h4>
+		<p>In order to administer tags, you need to be higher than level 3.  Hokay!  Click on the "Manage" link in the wordpress admin system;  then click on the "Tags" submenu.  This will display a list of all of the tags.  Beside each tag,  there are two links.</p>
+		<p>Rename tag,  takes you to a page which allows changing the display of a tag.  Type the new name in the text box,  hit "Save", and then your tag will be renamed.  If there's already a tag with that name,  the display of the tag widgets looks okay (there are no duplicates);  but the counts for the tags might be a little bit off if posts have been tagged with both versions.  Some kind of merge thing is on my todo list; but you know what they say about building Rome.</p>
+		<p>Delete tag,  takes you to a confirmation page.  If you click yes;  then the tag (and the associations to posts) will be deleted.  This isn't something you can undo,  so be careful (:</p>
+	</li>
+
+
+
+
+
+
+	<li>
+		<h4><a name="i"></a>Linking to Tags</h4>
+		<p>The plugin creates redirects that simplify the urls that tags use.  If you had the tags pony and circus, these are the ways you could access the tag pages:
+			<ul>
+				<li>/tag/pony (get the posts that match pony)</li>
+				<li>/tags/pony (ditto)</li>
+				<li>/tag/circus (get the posts that match circus)</li>
+				<li>/tags/circus (ditto)</li>
+				<li>/tag/circus+pony (get the posts that match both circus and pony)</li>
+				<li>/tags/pony+circus (ditto)</li>
+			</ul>
+		</p>
+		Easy, eh?
+	</li>
+
+
+
+
+
+
+	<li>
+		<h4><a name="d"></a>API Reference</h4>
+		<h5><a name="da"></a>ultimate_show_post_tags($separator="&amp;nbsp;", $baseurl='/tag/', $notagmessage = "No Tags", $morelinks = "")</h5>
+		<dl>
+			<dt>$seperator</dt>
+			<dd>The character that seperates tags.  It only appears between tags,  and not at the beginning or end of the list.</dd>
+			<dt>$baseurl</dt>
+			<dd>The base URL to link the text of a tag to.  The tag link takes the form {baseurl}{tagname}.  The default points to the local tag page.</dd>
+			<dt>$notagmessage</dt>
+			<dd>The text to display when a post has no tags.</dd>
+			<dt>$morelinks</dt>
+			<dd>Either a single link as a string,  or an array of links.  The links are base urls to other systems that support tagging.  As with the base url,  the final links take the form of {url}{tagname}.  Each link is displayed as an &raquo; for brevitys sake.</dd>
+		</dl>
+
+		<p>This function displays a list of the tags associated with the current post (that is, the one defined by the global variable $post).  Each tag is displayed as a link to the tag page specified by the base url,  along with &raquo; characters for any links specified in $morelinks.</p>
+
+		<p>I opted for using a seperator,  rather than a prefix and postfix for the list items;  so if you wanted to wrap the tags in &lt;li&gt; tags,  you'd need to use &lt;/li&gt;&lt;li&gt; as the seperator,  and wrap the whole list in a pair of &lt;li&gt; tags (not to mention the list tags).</p>
+
+		<p>Useful urls for $morelinks are http://www.technorati.com/tags/ http://del.icio.us/tags/ and http://www.flickr.com/photos/tags/</p>
+
+		<h5><a name="db"></a>ultimate_show_popular_tags($limit=10)</h5>
+		<dl>
+			<dt>$limit</dt>
+			<dd>The maximum number of tags to retrieve.</dd>
+		</dl>
+		<p>This function creates a list of the most popular tags,  with the number of occurances.  The opening and closing list tags aren't included,  to allow choosing between ordered or unordered lists in the enclosing template.</p>
+		<p>The format of the tags that are output is:
+		<xmp><li>{tagname} ({count})</li></xmp>
+		e.g. <xmp><li>Photo (87)</li></xmp>
+		</p>
+
+		<h5><a name="dc"></a>ultimate_tag_archive($limit = 20, $postlimit=20)</h5>
+		<dl>
+			<dt>$limit</dt>
+			<dd>The maximum number of tags to get</dd>
+			<dt>$postlimit</dt>
+			<dd>The maximum number of posts to get for each tag</dd>
+		</dl>
+		<p>Perhaps you are familiar with the category archive plugin I wrote.  This function creates a tag archive in the same format;  but using tags instead of categories.</p>
+
+		<p>This function returns the top tags (the maximum is specified by $limit),  and the most recent posts (the maximum number of posts to display is specified by $postlimit).  If there are more posts,  then a link to the tag page is also displayed.</p>
+
+	<div style="border:1px solid black; padding:2px;margin:2px;">
+css class = tagarchive</p>
+	<div style="border:1px solid black; padding:2px;margin:2px;">
+css class = tagarchivename<br />
+{the name of the tag} - {the total number of matching posts}
+</div>
+	<div style="border:1px solid black; padding:2px;margin:2px;">
+
+css class = tagarchiveposts<br />
+{the most recent postings for this tag.  If there are more postings than the limit specified,  a link is included to the tag page.}
+</div>
+	</div>
+
+		<a name="dh"></a><h5>ultimate_tag_cloud($order='tag', $direction='asc')</h5>
+		<dl>
+			<dt>$order</dt>
+			<dd>The order to display tags in.  Valid choices are "tag" and "count".</dd>
+			<dt>$direction</dt>
+			<dd>The direction to sort the tags in.  Valid choices are "asc" (makes most sense for sorting by tag) and "desc" (makes most sense for sorting by count).</dd>
+		</dl>
+
+		<p>This function displays a list of tags,  in the specified order.  The tags are displayed using a CSS class depending on the tag popularity;  and the tags link to their tag page.</p>
+		<p>The popularity algorithm is kinda hinky.  The popularity of a tag depends on how many posts it appears on compared to the average.</p>
+		<p>"taglevel1" is the largest,  and has the tags which are used more than 20x the average;  and "taglevel7" is the smallest,  and has all of the tags which are used less than average.  The rest of the tag levels cut off at 10x the average,  6x the average,  4x the average, 2x the average, and 1x than the average.</p>
+
+		<hr />
+
+		<p>The rest of the functions do the behind the scenes donkey-work;  and as such aren't too interesting in the day-to-day running of ultimate tag warrior.</p>
+		<h5><a name="dk"></a>ultimate_get_posts()</h5>
+		<p>The code for selecting tagged posts from the database.  It looks in the tag get variable;  and when more than one tag is specified,  the posts which match all of the tags are retrieved.</p>
+
+		<h5><a name="dd"></a>ultimate_save_tags($postID)</h5>
+		<dl>
+			<dt>$postID</dt>
+			<dd>The ID of the current post</dd>
+		</dl>
+		<p>Writes the tags for the current post to the database.</p>
+
+		<h5><a name="de"></a>ultimate_display_tag_widget()</h5>
+		<p>The code for displaying the tag entry box on the post editing page.</p>
+
+		<h5><a name="df"></a>ultimate_tag_templates()</h5>
+		<p>The code for displaying the tag pages, and the tag archive page.</p>
+
+		<h5><a name="dg"></a>ultimate_rewrite_rules()</h5>
+		<p>The code for redirecting requests to /tag/ and /tags/.
+
+		<h5><a name="di"></a>function ultimate_tag_admin()</h5>
+		<p>The code that performs the administration magic.</p>
+
+		<h5><a name="dj"></a>ultimate_admin_menus()</h5>
+		<p>The code that hooks the administration up to the manage menu.</p>
+	</li>
+
+	<li>
+		<h4><a name="e"></a>What else?</h4>
+		<p>I have a todo list.  Some of these things are more likely than others to get done.</p>
+		<ul>
+			<li>Internationalisation (or is it localisation.  The thing with languages, in any case)</li>
+			<li>Tag merging in the administration system (If you rename a tag to be the same as another tag;  allow merging the two tags into one tag.) </li>
+			<li>Tweaking the tag cloud algorithm (I'm not sure how well my current algorithm differentiates between tags... (: )</li>
+			<li>A post filter that replaces occurances of tags with links to tag pages.</li>
+			<li>Exciting linguistical magic...</li>
+		</ul>
+	</li>
+</ol>
+</body>
+</html>
