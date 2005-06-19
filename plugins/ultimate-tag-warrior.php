@@ -327,8 +327,8 @@ function ultimate_tag_templates() {
 Adds a rewrite rule that catches requests to /tag/ and /tags/
 */
 function &ultimate_rewrite_rules(&$rules) {
-	$rules["^tag/?(.*)"] = "/index.php?tag=$1 [QSA]";
-	$rules["^tags/?(.*)"] = "/index.php?tag=$1 [QSA]";
+	$rules["tag/?(.*)"] = "index.php?tag=$1";
+	$rules["tags/?(.*)"] = "index.php?tag=$1";
 
 	return $rules;
 }
