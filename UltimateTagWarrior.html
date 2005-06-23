@@ -35,6 +35,7 @@ xmp {font-size:1.5em;}
 			<li><a href="#db">ultimate_show_popular_tags</a></li>
 			<li><a href="#dc">ultimate_tag_archive</a></li>
 			<li><a href="#dh">ultimate_tag_cloud</a></li>
+			<li><a href="#dk">ultimate_show_related_tags</a></li>
 			<li><a href="#dk">ultimate_get_posts</a></li>
 			<li><a href="#dd">ultimate_save_tags</a></li>
 			<li><a href="#de">ultimate_display_tag_widget</a></li>
@@ -77,15 +78,13 @@ xmp {font-size:1.5em;}
 	</li>
 
 
-
-
-
 	<li>
 		<h4><a name="f"></a>Updates</h4>
 		<h5>Ch-Ch-Ch-Changes</h5>
 		<dl><dt>0.1</dt><dd>Initial Release</dd>
 			<dt>0.2</dt><dd>Couple of bug fixes<br />Addition of tag clouds<br />Addition of administration tools</dd>
 			<dt>1.0</dt><dd>Tag1+Tag2 syntax is supported for getting the intersection of N tags.<br />ultimate_show_post_tags now defaults to linking the text to the local tag page instead of technorati;  and allows specifying a list of base tag urls to link to</dd>
+			<dt>1.1</dt><dd>ultimate_show_related_tags was added.</dd>
 		</dl>
 		<h5>Moving from version to version</h5>
 		<p>From 0.1 to 0.2</p>
@@ -101,6 +100,13 @@ xmp {font-size:1.5em;}
 			<li>Move the themes/default/tag.php file into /wp-content/thems/default/tag.php</li>
 			<li>If you have a custom tag.php file;  replace the old block at the top of the page with this sweet two liner: <xmp>global $posts, $id;
 ultimate_get_posts();</xmp></li>
+		</ul>
+
+		<p>From 1.0 to 1.1</p>
+		<ul>
+			<li>Move the ultimate-tag-warrior.php file into /wp-content/plugins.</li>
+			<li>Move the themes/default/tag.php file into /wp-content/themes/default/tag.php</li>
+			<li>Optionally,  include a list of related links in the tag.php template</li>
 		</ul>
 	</li>
 
@@ -183,6 +189,7 @@ ultimate_get_posts();</xmp>
 </xmp></li>
 			<li>The close brace at the end of the main while loop</li>
 		</ol>
+		<p>To include a list of related tags,  make a call to the <a href="#dk">ultimate_show_related_tags function</a>.  With no parameters,  the function returns tags wrapped in &lt;li&gt; tags.</p>
 
 		<h5><a name="ce"></a>Tag cloud</h5>
 		<p>Perhaps you would like a tag cloud.  There are two parts to this:  updating a theme to include a call to the tag cloud function,  and adding CSS to style the tag cloud.</p>
@@ -301,6 +308,19 @@ css class = tagarchiveposts<br />
 		<p>This function displays a list of tags,  in the specified order.  The tags are displayed using a CSS class depending on the tag popularity;  and the tags link to their tag page.</p>
 		<p>The popularity algorithm is kinda hinky.  The popularity of a tag depends on how many posts it appears on compared to the average.</p>
 		<p>"taglevel1" is the largest,  and has the tags which are used more than 20x the average;  and "taglevel7" is the smallest,  and has all of the tags which are used less than average.  The rest of the tag levels cut off at 10x the average,  6x the average,  4x the average, 2x the average, and 1x than the average.</p>
+
+		<a name="dk"></a><h5>ultimate_show_related_tags($pre = '&lt;li&gt;', $post = '&lt;/li&gt;', $notags='None')</h5>
+		<dl>
+			<dt>$pre</dt>
+			<dd>Prefix for each tag</dd>
+			<dt>$post</dt>
+			<dd>Postfix for each tag</dd>
+			<dt>$notags</dt>
+			<dd>The text to display when there are no related tags.</dd>
+		</dl>
+		<p>This function displays a list of tags that are related to the current tag set (if you are looking at /tag/monkey then the current tag set is monkey.  /tag/monkey+banana has monkey and banana as its current tag set).  Each of the tags is wrapped in the prefix and postfix specified;  and for each tag,  there is a + link, that adds the tag to the tag set,  a link to the tag,  and an indication of the number of times the tag is used.</p>
+		<p>Related tags are all of the tags, from all of the posts that match the current tag set;  excluding the ones which are already part of the current tag set.</p>
+		<p>If you place this function pretty much anywhere but tag.php,  nothing is going to happen.</p>
 
 		<hr />
 

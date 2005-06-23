@@ -6,6 +6,8 @@ ultimate_get_posts();
 
 	<div id="content" class="narrowcolumn">
 
+	<p>Related Tags<?php ultimate_show_related_tags(' | ','') ?></p>
+
 	<?php if (have_posts()) : ?>
 
 		<?php while (have_posts()) : the_post(); ?>
@@ -36,7 +38,6 @@ ultimate_get_posts();
 		<?php include (TEMPLATEPATH . "/searchform.php"); ?>
 
 	<?php endif; ?>
-
 	</div>
 
 <?php get_sidebar(); ?>

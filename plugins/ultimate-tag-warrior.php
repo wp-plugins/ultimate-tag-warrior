@@ -5,7 +5,7 @@ Plugin URI: http://www.neato.co.nz/manyfaces/wordpress-plugins/ultimate-tag-warr
 Description: Add tags to wordpress.  Tags and tag/post associations are seperated out for great justice.
 			 And when I say great justice,  I mean doing more with tags than just listing them.  This is,
 			 the ultimate tag warrior.
-Version: 1.0
+Version: 1.1
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -182,6 +182,83 @@ SQL;
 		}
 		echo "<a href=\"/tag/$tag->tag\" class=\"$tagclass\" title=\"$tag->tag ($tag->count)\">$tag->tag</a> ";
   	}
+}
+
+/* ultimate_show_related_tags($pre="<li>", $post="</li>")
+Display a list of tags that are related to the current tag set.  $pre and $post are the prefix and suffix
+for each tag.
+
+I can't do subselects on the mySQL version I'm developing on;  so this is done the two-query way.  I figure
+it's probably better to do it this way for anyone else who is running older mySQL.
+*/
+
+function ultimate_show_related_tags($pre = "<li>", $post = "</li>", $notags="None") {
+	global $wpdb, $table_prefix, $posts, $table_prefix, $tableposts, $id;
+	$tabletags = $table_prefix . 'tags';
+	$tablepost2tag = $table_prefix . "post2tag";
+
+	$tags = $_GET["tag"];
+	$tagset = explode(" ", $tags);
+	$taglist = "'" . $tagset[0] . "'";
+	$tagcount = count($tagset);
+	if ($tagcount > 1) {
+		for ($i = 1; $i <= $tagcount; $i++) {
+			if ($tagset[$i] <> "") {
+				$taglist = $taglist . ", '" . $tagset[$i] . "'";
+			}
+		}
+	}
+
+	$now = current_time('mysql', 1);
+
+	$q = <<<SQL
+	SELECT p2t.post_id
+		 FROM $tablepost2tag p2t, $tabletags t, $tableposts p
+		 WHERE p2t.tag_id = t.id
+		 AND p2t.post_id = p.ID
+		 AND (t.tag IN ($taglist))
+		 AND post_date_gmt < '$now'
+		 AND post_status = 'publish'
+		 GROUP BY p2t.post_id HAVING COUNT(p2t.post_id)=$tagcount
+SQL;
+	$postids = $wpdb->get_results($q);
+	if ($postids) {
+
+		$postidlist = $postids[0]->post_id;
+
+		for ($i = 1; $i <= count($postids); $i++) {
+			$postidlist = $postidlist . ", '" . $postids[$i]->post_id . "'";
+		}
+
+		$q = <<<SQL
+	SELECT t.tag, COUNT(p2t.post_id) AS count
+	FROM $tablepost2tag p2t, $tabletags t, $tableposts p
+	WHERE p2t.post_id IN ($postidlist)
+	AND p2t.post_id = p.ID
+	AND t.tag NOT IN ($taglist)
+	AND t.id = p2t.tag_id
+	AND post_date_gmt < '$now'
+	AND post_status = 'publish'
+	GROUP BY p2t.tag_id
+	ORDER BY count DESC, t.tag ASC
+SQL;
+
+		$baseurl = "/tag/";
+		foreach($tagset as $tag) {
+			$baseurl .= $tag . "+";
+		}
+
+		$tags = $wpdb->get_results($q);
+		$out = "";
+		if ($tags) {
+			foreach ($tags as $tag) {
+				$out .= $pre . "<a href=\"$baseurl" . $tag->tag . "\">+ </a><a href=\"/tag/$tag->tag\"/>" . $tag->tag ."</a> (" . $tag->count . ")" . $post;
+			}
+		} else {
+			$out = $pre . $notags . $post;
+		}
+		echo $out;
+	}
 }
 
 /* ultimate_get_posts()
