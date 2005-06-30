@@ -5,11 +5,12 @@ Plugin URI: http://www.neato.co.nz/manyfaces/wordpress-plugins/ultimate-tag-warr
 Description: Add tags to wordpress.  Tags and tag/post associations are seperated out for great justice.
 			 And when I say great justice,  I mean doing more with tags than just listing them.  This is,
 			 the ultimate tag warrior.
-Version: 1.1
+Version: 1.1.1
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
 
+$deliciousAPIURL = "http://del.icio.us/api/";
 /*
 ultimate_show_popular_tags
 Creates a list of the most popular tags.  Intended for sidebar use.
@@ -18,13 +19,18 @@ The format of the tags is:
 <li>{tagname} ({count})</li>
 */
 function ultimate_show_popular_tags($limit = 10) {
-	global $wpdb, $tabletags;
+	global $wpdb, $table_prefix;
 
-	$query = "select tag, count(tag) as count
-			  from $tabletags
-			  group by tag
-			  order by count desc
-			  limit $limit";
+    $tabletags = $table_prefix . "tags";
+    $tablepost2tag = $table_prefix . "post2tag";
+
+	$query = <<<SQL
+		select tag, count(p2t.post_id) as count
+		from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id
+		group by t.tag
+		order by count desc
+		limit $limit
+SQL;
 
 	$tags = $wpdb->get_results($query);
 
@@ -261,6 +267,28 @@ SQL;
 	}
 }
 
+function ultimate_delicious_link() {
+	global $post, $deliciousAPIURL, $wpdb, $table_prefix;
+	$tabletags = $table_prefix . 'tags';
+	$tablepost2tag = $table_prefix . "post2tag";
+
+	$q = <<<SQL
+select tag from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id
+where p2t.post_id = $post->ID
+order by tag asc
+SQL;
+	$tags = $wpdb->get_results($q);
+	if ($tags) {
+		foreach($tags as $tag) {
+			$taglist .= $tag->tag . " ";
+		}
+			echo "<a href=\"" . $deliciousAPIURL . "posts/add?description=" . urlencode($post->post_title) . "&url=" . urlencode(get_permalink($post->ID)) . "&tags=$taglist\">Post to del.icio.us</a>";
+	} else {
+		echo "<a href=\"http://del.icio.us/post?url=" . urlencode(get_permalink($post->ID)) . "&title=" . urlencode($post->post_title) . "\">Post to del.icio.us</a>";
+	}
+
+}
+
 /* ultimate_get_posts()
 Retrieves the posts for the tags specified in $_GET["tag"].  Gets the intersection when there are multiple tags.
 */
@@ -397,6 +425,9 @@ function ultimate_tag_templates() {
 	} else 	if ($_GET["tag"] != "") {
 		include(TEMPLATEPATH . '/tag.php');
 		exit;
+	} else {
+		include(TEMPLATEPATH . '/index.php');
+		exit;
 	}
 }
 
@@ -404,8 +435,8 @@ function ultimate_tag_templates() {
 Adds a rewrite rule that catches requests to /tag/ and /tags/
 */
 function &ultimate_rewrite_rules(&$rules) {
-	$rules["tag/?(.*)"] = "index.php?tag=$1";
 	$rules["tags/?(.*)"] = "index.php?tag=$1";
+	$rules["tag/?(.*)"] = "index.php?tag=$1";
 
 	return $rules;
 }
@@ -501,6 +532,66 @@ HTML;
 	echo "</div>";
 }
 
+/*
+SELECT * from
+	$tabletags t, $tablepost2tag p2t, $tableposts p
+WHERE t.ID = p2t.tag_id
+  AND p.ID = p2t.post_id
+  AND t.tag IN ($taglist)
+  AND post_date_gmt < '$now'
+  AND post_status = 'publish'
+GROUP BY p.ID
+HAVING COUNT(p.id) = $tagcount
+ORDER BY post_date desc
+*/
+function ultimate_posts_join() {
+	if ($_GET["tag"] != "") {
+		global $table_prefix, $wpdb;
+
+		$tabletags = $table_prefix . "tags";
+		$tablepost2tag = $table_prefix . "post2tag";
+
+		$join = " INNER JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags t on p2t.tag_id = t.id ";
+		return $join;
+	}
+}
+
+function ultimate_posts_where() {
+	if ($_GET["tag"] != "") {
+		global $table_prefix, $wpdb;
+
+		$tabletags = $table_prefix . "tags";
+		$tablepost2tag = $table_prefix . "post2tag";
+
+		$tags = $_GET["tag"];
+		$tagset = explode(" ", $tags);
+		$taglist = "'" . $tagset[0] . "'";
+		$tagcount = count($tagset);
+		if ($tagcount > 1) {
+			for ($i = 1; $i <= $tagcount; $i++) {
+				if ($tagset[$i] <> "") {
+					$taglist = $taglist . ", '" . $tagset[$i] . "'";
+				}
+			}
+		}
+
+		$where = " AND t.tag IN ($taglist) ";
+
+		return $where;
+	}
+}
+
+function ultimate_posts_having () {
+	if ($_GET["tag"] != "") {
+		$tags = $_GET["tag"];
+		$tagset = explode(" ", $tags);
+		$taglist = "'" . $tagset[0] . "'";
+		$tagcount = count($tagset);
+
+		return " HAVING count(wp_posts.id) = $tagcount ";
+	}
+}
+
 // Add or edit tags
 add_action('simple_edit_form', 'ultimate_display_tag_widget');
 add_action('edit_form_advanced', 'ultimate_display_tag_widget');
@@ -518,4 +609,8 @@ add_filter('rewrite_rules_array', 'ultimate_rewrite_rules');
 
 // Admin menu items
 add_action('admin_menu', 'ultimate_admin_menus');
+
+// add_filter('posts_join', 'ultimate_posts_join');
+// add_filter('posts_where', 'ultimate_posts_where');
+// add_filter('posts_having','ultimate_posts_having');
 ?>
