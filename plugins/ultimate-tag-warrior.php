@@ -5,7 +5,7 @@ Plugin URI: http://www.neato.co.nz/manyfaces/wordpress-plugins/ultimate-tag-warr
 Description: Add tags to wordpress.  Tags and tag/post associations are seperated out for great justice.
 			 And when I say great justice,  I mean doing more with tags than just listing them.  This is,
 			 the ultimate tag warrior.
-Version: 1.1.1
+Version: 1.1.2
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -424,9 +424,6 @@ function ultimate_tag_templates() {
 		exit;
 	} else 	if ($_GET["tag"] != "") {
 		include(TEMPLATEPATH . '/tag.php');
-		exit;
-	} else {
-		include(TEMPLATEPATH . '/index.php');
 		exit;
 	}
 }
