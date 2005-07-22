@@ -1,0 +1,167 @@
+<html>
+	<head>
+		<title>Ultimate Tag Warrior 2.5:  Help</title>
+		<style type="text/css">
+			body, td {font-family:Verdana; font-size:0.8em; line-height:2em;}
+			dt {font-weight:bolder; }
+			code {font-size:120%}
+		</style>
+		</head>
+
+
+	<body>
+		<h2>Ultimate Tag Warrior 2:  Help</h2>
+		<h3>A rockin' wordpress plugin by <a href="http://www.neato.co.nz">Christine Davis</a>
+
+		<h3>Install</h3>
+		<ol>
+			<li>Copy the plugins/UltimateTagWarrior folder into your plugins folder</li>
+			<li>Copy themes/default/tag.php file into the default theme folder and your current theme folder</li>
+			<li>Run the install script by visiting http://{yoursite}/wp-content/plugins/UltimateTagWarrior/ultimate-tag-warrior-install.php</li>
+			<li>Activate the plugin [Things are different in 2.0;  but if you enable both the 2.0 an1.3 legacy versions of the plugin,  all of the old function calls to UTW1 will work A-OK alongside UTW2]</li>
+			<li>Go to the wordpress site admin page,  then to Manage > Tags.  There are options!
+				<ul>
+					<li>The base url is the location of tag urls, relative to the site root.  The value should be of the form "/wp/monkey/magicalkeywordthingees/" or "/tag/" (i.e. with leading and trailing spaces).  Any time you change this,  you'll need to update your permalink structure (Go to Options > Permalinks,  then click Update Permalink Structure or manually update your .htaccess file accordingly).</li>
+					<li>Include local tag links and include Technorati tag links allow automatically appending tag links to the content.  By default, links to Technorati are enabled.  You can have both, either or neither enabled.  Local links display before Technorati if both are enabled.</li>
+				</ul>
+			</li>
+		</ol>
+
+		<h3>Administration</h3>
+		<p>Ultimate Tag Warrior allows a whole bunch of administrative activities.</p>
+
+		<h4>Help!</h4>
+		<p>There's a link to this file,  as well as a link to the UTW homepage.</p>
+
+		<h4>Configuration</h4>
+		<p>The base url,  is the location of the tag "folder" relative to your site root.  It should have both leading and trailing slashes.  If you change this,  you'll need to either click the update permalinks button;  or manually change your .htaccess file to reflect the change.</p>
+		<p>Automatically include Technorati and local links options allow specifying whether Technorati and/or local tag links should be included in the post text automatically.  By default,  Technorati tags are included,  but local tags are not.</p>
+		<p>Automatically add categories as tags will add the names of any categories selected to the list of tags.</p>
+
+		<h4>Edit Tags</h4>
+		<p>This allows renaming, replacing and deleting tags.  If you add more than one tag,  then each of the tags will be associated with each of the posts that were tagged with the original tag.  For example,  if you renamed the bananas category to "fruit yellow",  then any post that was tagged with banana will become tagged with both fruit and yellow instead.  If you rename to a tag that is already in use,  then the two tags will merge together.</p>
+		<p>Deleting deletes a tag.  You can't undo this;  although there is a pesky dialog box that pops up to confirm deletions.</p>
+
+		<h4>Tidy Tags</h4>
+		<p>Use this at your own risk (;  It seems to work okay,  but I guess it has the potential to mangle your tags.  If you've ended up with orphaned tags or duplicate tags;  clicking this button will sort everything out.</p>
+
+		<h4>Convert Tags</h4>
+		<p>Again,  this is risky (:  You can't undo this once it's done (at least,  not easily.  You could delete the categories that belong to tags if you really wanted).  Clicking this button will add the categories of all of your posts as tags.</p>
+
+		<h3>Wedging Ultimate Tag Warrior Into Your Theme</h3>
+		<p>This document gets increasingly scary.  This part,  shouldn't be too scary.</p>
+		<p>All of the functions for putting bits of tag information on to your pages have one parameter that you need to worry about - $formattype.  The $formattype values are shorthand ways of describing how to format items in a list of tags.  Different formats can be used with different functions.  This table gives an overview of compatible pairs.</p>
+
+		<table>
+			<tr><td></td><td bgcolor="#D0D0D0" colspan="4">Formatting Type</td></tr>
+			<tr><td bgcolor="#D0D0D0">Function Name</td><td bgcolor="#EAEAEA">htmllist, commalist, technoraticommalist</td><td>weightedlinearbar, weightedlongtail</td><td bgcolor="#EAEAEA">coloredtagcloud, sizedtagcloud, coloredsizedtagcloud, sizedcoloredtagcloud</td></tr>
+			<tr><td>UTW_ShowTagsForCurrentPost, UTW_ShowRelatedTagsForCurrentPost</td><td bgcolor="green">Simple lists of tags</td><td bgcolor="red">These functions don't have enough information to display these formats</td><td bgcolor="red">These functions don't have enough information to display these formats</td></tr>
+			<tr><td bgcolor="#EAEAEA">UTW_ShowRelatedTagsForCurrentTagSet, UTW_ShowCurrentTagSet</td><td bgcolor="green">Simple lists of tags</td><td bgcolor="red">These functions don't have enough information to display these formats</td><td bgcolor="red">These functions don't have enough information to display these formats</td></tr>
+			<tr><td>UTW_ShowWeightedTagSet, UTW_ShowWeightedTagSetAlphabetical</td><td bgcolor="orange">These formats will work fine;  but there's no point.</td><td bgcolor="green">Graphical displays of weighted tags</td><td bgcolor="green">Textual displays of weighted tags</td></tr>
+		</table>
+
+		<p>Here are a few examples...</p>
+		<p>A comma list with the tags of the current post:  <code>&lt;?php UTW_ShowTagsForCurrentPost("commalist") ?></code>.  If the tags associated with the post were monkey, banana and elephants;  the output would be <code><a href="" rel="tag">monkey</a>, <a href="" rel="tag">banana</a>, <a href="" rel="tag">elephants</a></code> (The tags would link to the corresponding tag page)</p>
+		<p>A technorati comma list with the tags of the current post, on the other hand:  <code>&lt;?php UTW_ShowTagsForCurrentPost("technoraticommalist") ?></code>.  If the tags associated with the post were monkey, banana and elephants;  the output would be <code><a href="http://www.technorati.com/tag/monkey" rel="tag">monkey</a>, <a href="http://www.technorati.com/tag/banana" rel="tag">banana</a>, <a href="http://www.technorati.com/tag/elephants" rel="tag">elephants</a></code></p>
+		<p>My personal favourite;  a long tail curve would be:<code>&lt;?php UTW_ShowWeightedTagSet("weightedlongtail") ?></code>,  depending on your tag distribution,  will produce a curve of tags.</p>
+
+		<a name="wrapperfunctions"></a><h3>Functions for Putting Things on  Pages</h3>
+		<p>The UTW functions for calling in templates take the form
+
+			<code>UTW_ShowSomethingOrOther ($formattype, $format="")</code>
+
+		<p>$formattype is the name of the format to use to display the list of tags.  The list of format types is <a href="#predefinedformats">here</a></p>
+		<p>$format is an optional parameter,  for using a custom formatting string.  Formatting strings are scary (: The documentation for custom formatting strings lives <a href="#customformatting">here</a>.if there's a format that you're after I'm happy to help out.</p>
+
+		<p>The functions that are currently available are....</p>
+		<dl>
+			<dt>UTW_ShowTagsForCurrentPost($formattype, $format="")</dt>
+			<dd>Shows the tags for the current post.  Put this guy inside the wordpress loop.</dd>
+
+			<dt>UTW_ShowRelatedTagsForCurrentPost($formattype, $format="")</dt>
+			<dd>Shows related tags for the current post.  Again,  this belongs inside the wordpress loop.</dd>
+
+			<dt>UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="")</dt>
+			<dd>Shows the related tags for the current requested tags (for http://somesite/tag/foo+monkey the current requested tags are foo and monkey.  Got that?  Good).  This belongs on the tag.php template.</dd>
+
+			<dt>UTW_ShowCurrentTagSet($formattype, $format="")</dt>
+			<dd>Shows the current requested tags.  Again,  belongs on tag.php</dd>
+
+			<dt>UTW_ShowWeightedTagSet($formattype, $format="")</dt>
+			<dd>Shows tags in weighted order.  This can go anywhere.</dd>
+
+			<dt>function UTW_ShowWeightedTagSetAlphabetical($formattype, $format="")</dt>
+			<dd>Shows tags in alphabetical order;  but allows doing weighted formatting.  This can go anywhere.</dd>
+		</dl>
+
+		<a name="predefinedformats"></a><h3>Predefined Formats</h3>
+		<dl>
+			<dt>htmllist</dt>
+			<dd>Local tag links,  wrapped in &lt;li> tags.  The ul/ol tags aren't included to allow a bit more flexibility</dd>
+
+			<dt>commalist</dt>
+			<dd>A list of local tag links,  seperated by commas.  There's no trailing comma,  because that would look stupid.</dd>
+
+			<dt>technoraticommalist</dt>
+			<dd>Like a "commalist",  but linking to Technorati tag page instead of the local tag page.
+
+			<dt>weightedlinearbar</dt>
+			<dd>Draws a bar representation of tags.  Popular tags have wide segments, less popular tags have narrower segments.  Comes in any colour you like as long as it's B&W.  Be the first one on your block to display your tags like this.</dd>
+
+			<dt>weightedlongtail</dt>
+			<dd>Draws a <a href="http://en.wikipedia.org/wiki/The_Long_Tail">long tail</a> histogram of your tags.</dd>
+
+			<dt>coloredtagcloud</dt>
+			<dd>Draws a tag cloud,  with less popular tags in light grey.</dd>
+
+			<dt>sizedtagcloud</dt>
+			<dd>Draws a tag cloud,  with popular tags in bigger letters.</dd>
+
+			<dt>coloredsizedtagcloud or sizedcoloredtagcloud</dt>
+			<dd>Draws a tag cloud with both the colour and size indicating prominence.</dd>
+
+			<dt>coloredsizedtagcloudwithcount</dt>
+			<dd>Draws a tag cloud with the colour and size;  with the number of occurances following each tag.</dd>
+		</dl>
+
+		<p>Pony requests for additional formats are welcomed - I have no idea what you out there in the real world like to do with your tags..</p>
+
+		<a name="customformatting"></a><h3>Custom Formatting</h3>
+		<p>Formatting is new and scary;  but since I've only written stuff to replicate the old functionality with the new architecture,  and not so much things which directly utilise the new architecture;  I'm just going to hand-wave past this bit..</p>
+		<p>Okay, okay.</p>
+		<p>Formatting involves either a single formatting string,  or an associative array of formatting strings.  If a single formatting string is specified, then that formatting string is used for every item in the list.  If there's an array of strings,  the appropriate formatting string is used for the various parts of the tag list (this will make more sense when you see it in practice)</p>
+		<ul>
+			<li>%taglink% will display a link to the local tag page</li>
+			<li>%tag% will display the name of the tag</li>
+			<li>%tagdisplay% will display the presentation version of the tag (spaces instead of underscores, at the moment)</li>
+			<li>%tagcount% will display the number of occurances of a tag (not always applicable)</li>
+
+			<li>%tagweight% will display the percentage of times this tag is used (0-100)</li>
+			<li>%tagweightint% will display the tag weight,  rounded up to the nearest integer</li>
+			<li>%tagweightcolor% will pick a colour based on the tag weight (not so useful, but here for completeness)</li>
+			<li>%tagweightfontsize% will pick a font size based on the tag weight (not so useful, but here for completeness)</li>
+
+			<li>%tagrelweight% will display the relative weight of the tag.  The most popular tag has a weight of 100.</li>
+			<li>%tagrelweightint% will display the relative weight,  rounded up to the nearest integer</li>
+			<li>%tagrelweightcolor% will pick a colour based on the relative tag weight</li>
+			<li>%tagrelweightfontsize% will pick a font size based on the relative tag weight</li>
+
+			<li>%technoratitag% will display a link to the tag page on Technorati</li>
+			<li>%flickrtag% will display a link to the tag page on Flickr</li>
+			<li>%delicioustag% will display a link to the tag page on del.icio.us</li>
+			<li>%wikipediatag% will display a link to the corresponding item in the Wikipedia</li>
+		</ul>
+		<p>I'm happy to add any others to the list (:</p>
+
+		<p>Now,  the array of formatting strings, thing.</p>
+		<ul>
+			<li>first - the formatting string to use for the first item</li>
+			<li>last - the formatting string to use for the last item</li>
+			<li>default - the formatting string to use for the items in between (and when the first or last strings aren't specified)</li>
+			<li>none - the formatting string to use when there are no items in the list</li>
+		</ul>
+		<p>Perhaps examples will make this clearer!</p>
+		<code>&lt;li>%taglink%&lt;/li></code> will display all of the items in the list as links to the tag page,  wrapped in &lt;li> html tags.<br />
+		<code>array("default"=>"%taglink%, ", "last"=>"%taglink%", "none"=>"No Tags")</code> will display a comma list,  with no trailing comma;  or just "No Tags" if there are no items in the list.<br />
+	</body>
+</html>
