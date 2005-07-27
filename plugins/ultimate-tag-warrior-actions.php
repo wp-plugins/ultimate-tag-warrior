@@ -38,7 +38,7 @@ function ultimate_tag_admin() {
 	}
 
 	$showtable = true;
-	$siteurl = get_option('siteurl');
+	$siteurl = get_option('home');
 	echo "<div class=\"wrap\">";
 	echo "<h2>Tag Management</h2>";
 
@@ -58,6 +58,11 @@ function ultimate_tag_admin() {
 
 		update_option ('utw_long_tail_max_color', $_GET["ltmax"]);
 		update_option ('utw_long_tail_min_color', $_GET["ltmin"]);
+
+		update_option ('utw_tag_cloud_min_font', $_GET["tcfmin"]);
+		update_option ('utw_tag_cloud_max_font', $_GET["tcfmax"]);
+		update_option ('utw_tag_cloud_font_units', $_GET["tcfunits"]);
+
 
 		echo "<div class=\"updated\"><p>Updated settings</p></div>";
 	} else if ($_GET["action"] == "savetagupdate") {
@@ -168,6 +173,10 @@ SQL;
 		$tcmax = get_option ('utw_tag_cloud_max_color');
 		$tcmin = get_option ('utw_tag_cloud_min_color');
 
+		$tcfmin = get_option ('utw_tag_cloud_min_font');
+		$tcfmax = get_option ('utw_tag_cloud_max_font');
+		$tcfunits = get_option ('utw_tag_cloud_font_units');
+
 		$tpmax = get_option ('utw_tag_line_max_color');
 		$tpmin = get_option ('utw_tag_line_min_color');
 
@@ -220,8 +229,9 @@ SQL;
 			<tr><td>Use url rewriting for local tag urls (/tag/tag instead of index.php?tag=tag)</td><td><label for="puy">Yes </label><input type="radio" name="prettyurls" id="puy" value="yes" $puychecked> <label for="pun">No</label> <input type="radio" name="prettyurls" id="icn" value="no" $punchecked></td></tr>
 			<tr><td>Always display tag links on edit post page (instead of switching to a dropdown when there are many tags)</td><td><label for="ely">Yes </label><input type="radio" name="editlinks" id="ely" value="yes" $elychecked> <label for="eln">No</label> <input type="radio" name="editlinks" id="eln" value="no" $elnchecked></td></tr>
 			<tr><td colspan="2">Tag cloud colors</td></tr>
-			<tr><td>Most popular color</td><td><input type="text" name="tcmax" size="8" maxlength="7" value="$tcmax"></td></tr>
-			<tr><td>Least popular color</td><td><input type="text" name="tcmin" size="8" maxlength="7" value="$tcmin"></td></tr>
+			<tr><td>Most popular </td><td>color <input type="text" name="tcmax" size="8" maxlength="7" value="$tcmax"> size <input type="text" name="tcfmax" size="3" maxlength="3" value="$tcfmax" /></td></tr>
+			<tr><td>Least popular </td><td>color <input type="text" name="tcmin" size="8" maxlength="7" value="$tcmin"> size <input type="text" name="tcfmin" size="3" maxlength="3" value="$tcfmin" /></td></tr>
+			<tr><td>Font size units</td><td><select name="tcfunits"><option value="$tcfunits">Current: $tcfunits</option><option /><option value="em">em</option><option value="pt">pt</option><option value="px">px</option><option value="%">%</option></select></td></tr>
 			<!-- Just as soon as I think of a good way for deciding which colour pair to use where..
 			<tr><td colspan="2">Tag popularity graph</td></tr>
 			<tr><td>Most popular colour</td><td><input type="text" name="tpmax" size="8" maxlength="7" value="$tpmax"></td></tr>
@@ -346,8 +356,17 @@ function ultimate_display_tag_widget() {
   $tablepost2tag = $table_prefix . "post2tag";
 
   $taglist = "";
-  if ($post) {
-    $q = "select t.tag from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id and p2t.post_id=$post";
+
+
+  if ( (is_object($post) && $post->ID) || (!is_object($post) && $post)) {
+	if (is_object($post)) {
+		$postid = $post->ID;
+	} else {
+		$postid = $post;
+	}
+
+
+    $q = "select t.tag from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id and p2t.post_id=$postid";
     $tags = $wpdb->get_results($q);
 
     if ($tags) {
@@ -395,7 +414,7 @@ function ultimate_the_content_filter($thecontent='') {
 		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), "%taglink% ");
 	}
 	if (get_option('utw_include_technorati_links') == 'yes') {
-		$thecontent = $thecontent . "Technorati Tags: " . $utw->FormatTags($utw->GetTagsForPost($post->ID), "%technoratitag% ");
+		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), array("first"=>"Technorati Tags: %technoratitag% ", "default"=>"%technoratitag% ", "none"=>""));
 	}
 	return $thecontent;
 }

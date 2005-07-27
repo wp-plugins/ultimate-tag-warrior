@@ -16,7 +16,6 @@
 		<h3>Install</h3>
 		<ol>
 			<li>Copy the plugins/UltimateTagWarrior folder into your plugins folder</li>
-			<li>Copy themes/default/tag.php file into the default theme folder and your current theme folder</li>
 			<li>Run the install script by visiting http://{yoursite}/wp-content/plugins/UltimateTagWarrior/ultimate-tag-warrior-install.php</li>
 			<li>Activate the plugin [Things are different in 2.0;  but if you enable both the 2.0 an1.3 legacy versions of the plugin,  all of the old function calls to UTW1 will work A-OK alongside UTW2]</li>
 			<li>Go to the wordpress site admin page,  then to Manage > Tags.  There are options!
@@ -54,10 +53,11 @@
 
 		<table>
 			<tr><td></td><td bgcolor="#D0D0D0" colspan="4">Formatting Type</td></tr>
-			<tr><td bgcolor="#D0D0D0">Function Name</td><td bgcolor="#EAEAEA">htmllist, commalist, technoraticommalist</td><td>weightedlinearbar, weightedlongtail</td><td bgcolor="#EAEAEA">coloredtagcloud, sizedtagcloud, coloredsizedtagcloud, sizedcoloredtagcloud</td></tr>
-			<tr><td>UTW_ShowTagsForCurrentPost, UTW_ShowRelatedTagsForCurrentPost</td><td bgcolor="green">Simple lists of tags</td><td bgcolor="red">These functions don't have enough information to display these formats</td><td bgcolor="red">These functions don't have enough information to display these formats</td></tr>
-			<tr><td bgcolor="#EAEAEA">UTW_ShowRelatedTagsForCurrentTagSet, UTW_ShowCurrentTagSet</td><td bgcolor="green">Simple lists of tags</td><td bgcolor="red">These functions don't have enough information to display these formats</td><td bgcolor="red">These functions don't have enough information to display these formats</td></tr>
-			<tr><td>UTW_ShowWeightedTagSet, UTW_ShowWeightedTagSetAlphabetical</td><td bgcolor="orange">These formats will work fine;  but there's no point.</td><td bgcolor="green">Graphical displays of weighted tags</td><td bgcolor="green">Textual displays of weighted tags</td></tr>
+			<tr><td bgcolor="#D0D0D0">Function Name</td><td bgcolor="#EAEAEA">htmllist, commalist, technoraticommalist</td><td>weightedlinearbar, weightedlongtail</td><td bgcolor="#EAEAEA">coloredtagcloud, sizedtagcloud, coloredsizedtagcloud, sizedcoloredtagcloud</td><td>postcommalist, posthtmllist</td></tr>
+			<tr><td>UTW_ShowTagsForCurrentPost, UTW_ShowRelatedTagsForCurrentPost</td><td bgcolor="green">Simple lists of tags</td><td bgcolor="red">These functions don't have enough information to display these formats</td><td bgcolor="red">These functions don't have enough information to display these formats</td><td bgcolor="red">Doesn't display posts</td></tr>
+			<tr><td bgcolor="#EAEAEA">UTW_ShowRelatedTagsForCurrentTagSet, UTW_ShowCurrentTagSet</td><td bgcolor="green">Simple lists of tags</td><td bgcolor="red">These functions don't have enough information to display these formats</td><td bgcolor="red">These functions don't have enough information to display these formats</td><td bgcolor="red">Doesn't display posts</td></tr>
+			<tr><td>UTW_ShowWeightedTagSet, UTW_ShowWeightedTagSetAlphabetical</td><td bgcolor="orange">These formats will work fine;  but there's no point.</td><td bgcolor="green">Graphical displays of weighted tags</td><td bgcolor="green">Textual displays of weighted tags</td><td bgcolor="red">Doesn't display posts</td></tr>
+			<tr><td>UTW_ShowRelatedPostsForCurrentPost</td><td bgcolor="red"></td><td bgcolor="red"></td><td bgcolor="red"></td><td bgcolor="green">Lists of posts</td></tr>
 		</table>
 
 		<p>Here are a few examples...</p>
@@ -80,6 +80,9 @@
 
 			<dt>UTW_ShowRelatedTagsForCurrentPost($formattype, $format="")</dt>
 			<dd>Shows related tags for the current post.  Again,  this belongs inside the wordpress loop.</dd>
+
+			<dt>UTW_ShowRelatedPostsForCurrentPost($formattype, $format="")</dt>
+			<dd>Shows related posts for the current post.  This is another for inside the wordpress loop.</dd>
 
 			<dt>UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="")</dt>
 			<dd>Shows the related tags for the current requested tags (for http://somesite/tag/foo+monkey the current requested tags are foo and monkey.  Got that?  Good).  This belongs on the tag.php template.</dd>
@@ -122,6 +125,12 @@
 
 			<dt>coloredsizedtagcloudwithcount</dt>
 			<dd>Draws a tag cloud with the colour and size;  with the number of occurances following each tag.</dd>
+
+			<dt>postcommalist</dt>
+			<dd>Displays a comma seperated list of links to posts.</dd>
+
+			<dt>posthtmllist</dt>
+			<dd>Displays a list of posts in &lt;li&gt; html tags.</dd>
 		</dl>
 
 		<p>Pony requests for additional formats are welcomed - I have no idea what you out there in the real world like to do with your tags..</p>
@@ -151,14 +160,23 @@
 			<li>%delicioustag% will display a link to the tag page on del.icio.us</li>
 			<li>%wikipediatag% will display a link to the corresponding item in the Wikipedia</li>
 		</ul>
+
+		<p>For lists of posts (just the related posts bit for now),  these formats are available:</p>
+		<ul>
+			<li>%title% will display the title of a post</li>
+			<li>%postlink% will display a link to a post,  with the post title as the link text</li>
+		</ul>
+
 		<p>I'm happy to add any others to the list (:</p>
 
 		<p>Now,  the array of formatting strings, thing.</p>
 		<ul>
+			<li>pre - text to display before the list of items</li>
 			<li>first - the formatting string to use for the first item</li>
 			<li>last - the formatting string to use for the last item</li>
 			<li>default - the formatting string to use for the items in between (and when the first or last strings aren't specified)</li>
 			<li>none - the formatting string to use when there are no items in the list</li>
+			<li>post - text to display after the list of items</li>
 		</ul>
 		<p>Perhaps examples will make this clearer!</p>
 		<code>&lt;li>%taglink%&lt;/li></code> will display all of the items in the list as links to the tag page,  wrapped in &lt;li> html tags.<br />

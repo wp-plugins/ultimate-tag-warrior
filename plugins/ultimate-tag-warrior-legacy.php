@@ -133,7 +133,7 @@ function ultimate_tag_cloud($order='tag', $direction='asc') {
 	$average = (count($tags) / $totalTags);
 
 	$baseurl = get_option('utw_base_url');
-	$siteurl = get_option('siteurl');
+	$siteurl = get_option('home');
 
   	foreach($tags as $tag) {
 		if ($tag->count > $average * 20) {
@@ -191,7 +191,7 @@ function ultimate_show_related_tags($pre = "<li>", $post = "</li>", $notags="Non
 		$baseurl .= $tag . "+";
 	}
 
-	$siteurl = get_option("siteurl");
+	$siteurl = get_option("home");
 
 	$tags = $utw->GetRelatedTags($utw->GetTagsForTagString($taglist));
 

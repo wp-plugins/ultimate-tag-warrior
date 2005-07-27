@@ -5,6 +5,8 @@ $tablepost2tag = $table_prefix . "post2tag";
 class UltimateTagWarriorCore {
 
 	/* Fundamental functions for dealing with tags */
+	/* The post corresponding to the postID are updated to be the tags in the list.  Previously assigned
+		tags not in the list are deleted. */
 	function SaveTags($postID, $tags) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
@@ -44,6 +46,30 @@ class UltimateTagWarriorCore {
 			$q = "delete from $tablepost2tag where post_id = $postID and tag_id not in ($taglist)";
 		}
 		$wpdb->query($q);
+	}
+
+	/* Adds the specified tag to the post corresponding with the post ID */
+	function AddTag($postID, $tag) {
+		global $tabletags, $tablepost2tag, $wpdb;
+
+		if ($tag <> "") {
+
+			$q = "SELECT id FROM $tabletags WHERE tag='$tag' limit 1";
+			$tagid = $wpdb->get_var($q);
+
+			if (is_null($tagid)) {
+				$q = "INSERT INTO $tabletags (tag) VALUES ('$tag')";
+				$wpdb->query($q);
+				$tagid = $wpdb->insert_id;
+			}
+
+			$q = "SELECT rel_id FROM $tablepost2tag WHERE post_id = '$postID' AND tag_id = '$tagid'";
+
+			if ( is_null($wpdb->get_var($q))) {
+				$q = "INSERT INTO $tablepost2tag (post_id, tag_id) VALUES ('$postID','$tagid')";
+				$wpdb->query($q);
+			}
+		}
 	}
 
 	/*
@@ -324,6 +350,46 @@ SQL;
 		}
 	}
 
+	function ShowRelatedPosts($tags, $format) {
+		echo $this->FormatPosts($this->GetRelatedPosts($tags), $format);
+	}
+
+	function GetRelatedPosts($tags) {
+		global $wpdb, $tabletags, $tablepost2tag, $post;
+
+		$now = current_time('mysql', 1);
+
+		$taglist = "'" . $tags[0]->tag . "'";
+		$tagcount = count($tags);
+		if ($tagcount > 1) {
+			for ($i = 1; $i <= $tagcount; $i++) {
+				$taglist = $taglist . ", '" . $tags[$i]->tag . "'";
+			}
+		}
+
+		if ($post->ID) {
+			$notclause = "AND p.ID != $post->ID";
+		}
+
+		$q = <<<SQL
+		SELECT DISTINCT p.*, count(p2t.post_id) as cnt
+			 FROM $tablepost2tag p2t, $tabletags t, $wpdb->posts p
+			 WHERE p2t.tag_id = t.id
+			 AND p2t.post_id = p.ID
+			 AND (t.tag IN ($taglist))
+			 AND post_date_gmt < '$now'
+			 AND post_status = 'publish'
+			 $notclause
+			 GROUP BY p2t.post_id
+			 ORDER BY cnt desc
+SQL;
+
+		return $wpdb->get_results($q);
+	}
+
+
+
+
 
 
 
@@ -439,7 +505,7 @@ SQL;
 		$tag_display = str_replace('-',' ',$tag_display);
 		$tag_name = strtolower($tag->tag);
 		$baseurl = get_option('utw_base_url');
-		$siteurl = get_option('siteurl');
+		$siteurl = get_option('home');
 
 		$prettyurls = get_option('utw_use_pretty_urls');
 
@@ -469,6 +535,48 @@ SQL;
 		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%delicioustag%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+
+		return $format;
+	}
+
+	function FormatPosts($posts, $format) {
+
+		if (is_array($format) && $format["pre"]) {
+			$out .= $format["pre"];
+		}
+
+		if ($posts) {
+			for ($i = 0; $i < count($posts); $i++) {
+				if (is_array($format)) {
+					if ($i == 0 && $format["first"]) {
+						$out .= $this->FormatPost($posts[$i], $format["first"]);
+					} else if ($i == (count($posts) -1) && $format["last"]) {
+						$out .= $this->FormatPost($posts[$i], $format["last"]);
+					} else {
+						$out .= $this->FormatPost($posts[$i], $format["default"]);
+					}
+				} else {
+					$out .= $this->FormatPost($posts[$i], $format);
+				}
+			}
+		} else {
+			if (is_array($format) && $format["none"]) {
+				$out .= $format["none"];
+			}
+		}
+
+		if (is_array($format) && $format["post"]) {
+			$out .= $format["post"];
+		}
+
+		return $out;
+	}
+
+	function FormatPost($post, $format) {
+		$url = get_permalink($post->ID);
+
+		$format = str_replace('%title%', $post->post_title, $format);
+		$format = str_replace('%postlink%', "<a href=\"$url\">$post->post_title</a>", $format);
 
 		return $format;
 	}
@@ -514,6 +622,12 @@ CSS;
 			case "coloredsizedtagcloudwithcount":
 				return array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
 
+			case "postcommalist":
+				return array ("default"=>"%postlink%, ", "last"=>"%postlink%", "none"=>"No Related Posts");
+
+			case "posthtmllist":
+				return array ("default"=>"<li>%postlink%</li>", "none"=>"<li>No Related Posts</li>");
+
 			case "custom":
 				return "";
 		}
@@ -547,16 +661,22 @@ CSS;
 		}
 	}
 
-	/* So that big fonts aren't huge;  and little fonts are legible.*/
+
 	function GetFontSizeForWeight($weight) {
 		$max = get_option ('utw_tag_cloud_max_font');
 		$min = get_option ('utw_tag_cloud_min_font');
 
-		$fontsize = ($weight * ($max / 100));
+		$units = get_option ('utw_tag_cloud_font_units');
+		if ($units == "") $units = '%';
 
-		if ($fontsize < $min) $fontsize = $min;
+		if ($max > $min) {
+			$fontsize = (($weight/100) * ($max - $min)) + $min;
 
-		return intval($fontsize) . "%";
+		} else {
+			$fontsize = (((100-$weight)/100) * ($min - $max)) + $max;
+		}
+
+		return intval($fontsize) . $units;
 	}
 }
 

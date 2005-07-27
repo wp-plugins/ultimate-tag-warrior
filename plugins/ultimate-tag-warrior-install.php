@@ -38,6 +38,8 @@ add_option('utw_tag_cloud_min_color', '#FFFFFF', 'The color of unpopular tags in
 add_option('utw_tag_cloud_max_font', '250', 'The maximum font size (as a percentage) for popular tags in tag clouds', 'yes');
 add_option('utw_tag_cloud_min_font', '70', 'The minimum font size (as a percentage) unpopular tags in tag clouds', 'yes');
 
+add_option ('utw_tag_cloud_font_units', '%', 'The units to display the font sizes with, on tag clouds.');
+
 add_option('utw_tag_line_max_color', '#000000', 'The color of popular tags in a tag line', 'yes');
 add_option('utw_tag_line_min_color', '#FFFFFF', 'The color of unpopular tags in a tag line', 'yes');
 
@@ -57,3 +59,4 @@ add_option('utw_always_show_links_on_edit_screen', 'no', 'Always display existin
 	<dd>Links tags to posts</dd>
 </dl>
 
+<p>Along with a whole pile of options.</p>
