@@ -2,6 +2,8 @@
 $tabletags = $table_prefix . "tags";
 $tablepost2tag = $table_prefix . "post2tag";
 
+$tag_cache;
+
 class UltimateTagWarriorCore {
 
 	/* Fundamental functions for dealing with tags */
@@ -408,9 +410,14 @@ SQL;
 		if ($order <> "tag" && $order <> "count") { $order = "tag"; }
 		if ($direction <> "asc" && $direction <> "desc") { $direction = "asc"; }
 
+		$now = current_time('mysql', 1);
+
 		$query = <<<SQL
 			select tag, count(p2t.post_id) as count
 			from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id
+							  inner join $wpdb->posts p on p2t.post_id = p.ID
+			 WHERE post_date_gmt < '$now'
+			 AND post_status = 'publish'
 			group by t.tag
 			having count > 0
 			order by $order $direction
@@ -435,9 +442,15 @@ SQL;
 			return;
 		}
 
+		$now = current_time('mysql', 1);
+
 		$query = <<<SQL
 			select tag, count(p2t.post_id) as count, ((count(p2t.post_id)/$totaltags)*100) as weight, ((count(p2t.post_id)/$maxtag)*100) as relativeweight
 			from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id
+							  inner join $wpdb->posts p on p2t.post_id = p.ID
+			 WHERE post_date_gmt < '$now'
+			 AND post_status = 'publish'
+
 			group by t.tag
 			order by $order $direction
 			limit $limit
@@ -449,16 +462,14 @@ SQL;
 	function GetDistinctTagCount() {
 		global $wpdb, $tablepost2tag;
 
-		return $wpdb->get_var("select count(*) from $tablepost2tag");
+		return $wpdb->get_var("select count(*) from $tablepost2tag p2t inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish'");
 	}
 
 	function GetMostPopularTagCount() {
 		global $wpdb, $tabletags, $tablepost2tag;
 
-		return $wpdb->get_var("select count(p2t.post_id) cnt from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id group by t.tag order by cnt desc limit 1");
+		return $wpdb->get_var("select count(p2t.post_id) cnt from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish' group by t.tag order by cnt desc limit 1");
 	}
-
-
 
 
 
@@ -678,6 +689,11 @@ CSS;
 
 		return intval($fontsize) . $units;
 	}
+
+
+
+
+
 }
 
 
