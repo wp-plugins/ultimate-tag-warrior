@@ -424,14 +424,9 @@ function ultimate_add_tags_to_rss($the_list, $type="") {
 
     $categories = get_the_category();
     $the_list = '';
-	$the_list .= "Type: $type";
     foreach ($categories as $category) {
         $category->cat_name = convert_chars($category->cat_name);
-        if ('rdf' == $type) {
-            $the_list .= "\n\t<category>$category->cat_name</category>";
-        } else {
-            $the_list .= "\n\t<dc:subject>$category->cat_name</dc:subject>";
-        }
+        $the_list .= "\n\t<dc:subject>$category->cat_name</dc:subject>";
     }
 
 	$format="<dc:subject>%tagdisplay%</dc:subject>";
