@@ -74,6 +74,30 @@ class UltimateTagWarriorCore {
 		}
 	}
 
+	/* Adds the specified tag to the post corresponding with the post ID */
+	function RemoveTag($postID, $tag) {
+		global $tabletags, $tablepost2tag, $wpdb;
+
+		if ($tag <> "") {
+
+			$q = "SELECT id FROM $tabletags WHERE tag='$tag' limit 1";
+			$tagid = $wpdb->get_var($q);
+
+			if (!is_null($tagid)) {
+				$q = "DELETE FROM $tablepost2tag WHERE post_id = '$postID' AND tag_id = '$tagid'";
+
+				$wpdb->query($q);
+			}
+
+			$q = "SELECT count(*) FROM $tablepost2tag WHERE tag_id = '$tagid'";
+
+			if ( 0 == $wpdb->get_var($q)) {
+				$q = "DELETE FROM $tabletag WHERE ID = $tagid";
+				$wpdb->query($q);
+			}
+		}
+	}
+
 	/*
 	 * Add any categories assigned to the post as tags.  This retains any exising tags.
 	 */
@@ -481,7 +505,7 @@ SQL;
 	/* Functions for formatting things*/
 	function FormatTags($tags, $format) {
 		if (is_array($format) && $format["pre"]) {
-			$out .= $format["pre"];
+			$out .= $this->FormatTag(null, $format["pre"]);
 		}
 
 		if ($tags) {
@@ -505,7 +529,7 @@ SQL;
 		}
 
 		if (is_array($format) && $format["post"]) {
-			$out .= $format["post"];
+			$out .= $this->FormatTag(null, $format["post"]);
 		}
 
 		return $out;
@@ -519,6 +543,8 @@ SQL;
 		$siteurl = get_option('home');
 
 		$prettyurls = get_option('utw_use_pretty_urls');
+
+		global $post;
 
 		// This feels so... dirty.
 		if ($prettyurls == "yes") {
@@ -547,6 +573,16 @@ SQL;
 		$format = str_replace('%delicioustag%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 
+		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+
+		if ($post->ID) {
+			$format = str_replace('%postid%', $post->ID, $format);
+		} else {
+			$format = str_replace('%postid%', $_REQUEST["post"], $format);
+		}
 		return $format;
 	}
 
@@ -593,6 +629,8 @@ SQL;
 	}
 
 	function GetFormatForType($formattype) {
+		global $user_level;
+
 		switch($formattype) {
 			case "htmllist":
 				return array ("default"=>"<li>%taglink%</li>", "none"=>"<li>No Tags</li>");
@@ -602,6 +640,26 @@ SQL;
 
 			case "technoraticommalist":
 				return array ("default"=>"%technoratitag%, ", "last"=>"%technoratitag%", "none"=>"No Tags");
+
+			case "superajax":
+			case "superajaxitem":
+				$default = "<span id=\"tags-%postid%-%tag%\">%taglink%";
+				if ($user_level > 3) {
+					$default .= "[<a href=\"javascript:sndReq('del', '%tag%', '%postid%')\">-</a>]";
+					$post = " <input type=\"text\" size=\"9\" id=\"addTag-%postid%\"> <input type=\"button\" value=\"+\" onClick=\"sndReq('add', document.getElementById('addTag-%postid%').value, '%postid%')\">";
+				}
+
+				$default .= "<a href=\"javascript:sndReq('expand', '%tag%', '%postid%')\">&raquo;</a> </span>";
+				$post .= "</span>";
+				if ($formattype == "superajax") {
+					return array("pre"=>"<span id=\"tags-%postid%\">","default"=>$default, "post"=>"$post");
+				} else {
+					return $default;
+				}
+
+
+			case "linkset":
+				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%')\">&laquo;</a>&nbsp;";
 
 			case "weightedlinearbar":
 				return array("default"=>"<td width=\"%tagweightint%%\" style=\"background-color:%tagrelweightcolor%; border-right:1px solid black;\"><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div>&nbsp;</div></a></td>", "pre"=>"<table cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid black; border-right:0px\" width=\"100%\"><tr>", "post"=>"</tr></table>");

@@ -434,6 +434,46 @@ function ultimate_add_tags_to_rss($the_list, $type="") {
 	echo $utw->FormatTags($utw->GetTagsForPost($post->ID), $format);
 }
 
+function ultimate_add_ajax_javascript() {
+
+$rpcurl = get_option('home') . "/wp-content/plugins/UltimateTagWarrior/ultimate-tag-warrior-ajax.php";
+
+echo <<<JAVASCRIPT
+<script language="javascript">
+function createRequestObject() {
+    var ro;
+    var browser = navigator.appName;
+    if(browser == "Microsoft Internet Explorer"){
+        ro = new ActiveXObject("Microsoft.XMLHTTP");
+    }else{
+        ro = new XMLHttpRequest();
+    }
+    return ro;
+}
+
+var http = createRequestObject();
+
+function sndReq(action, tag, post) {
+  	http.open('get', '$rpcurl?action='+action+'&tag='+tag+'&post='+post);
+    http.onreadystatechange = handleResponse;
+    http.send(null);
+}
+
+function handleResponse() {
+    if(http.readyState == 4){
+        var response = http.responseText;
+        var update = new Array();
+
+        if(response.indexOf('|' != -1)) {
+            update = response.split('|');
+            document.getElementById("tags-" + update[0]).innerHTML = update[1];
+        }
+    }
+}
+</script>
+JAVASCRIPT;
+}
+
 /*
 function ultimate_posts_join() {
 	if ($_GET["tag"] != "") {
@@ -511,4 +551,6 @@ add_filter('rewrite_rules_array', array('UltimateTagWarriorActions','ultimate_re
 
 add_filter('the_content', array('UltimateTagWarriorActions', 'ultimate_the_content_filter'));
 add_filter('the_category_rss', array('UltimateTagWarriorActions', 'ultimate_add_tags_to_rss'));
+
+add_filter('wp_head', array('UltimateTagWarriorActions', 'ultimate_add_ajax_javascript'));
 ?>
