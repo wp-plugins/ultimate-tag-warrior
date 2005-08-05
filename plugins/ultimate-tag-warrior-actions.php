@@ -2,6 +2,8 @@
 require_once('ultimate-tag-warrior-core.php');
 $utw = new UltimateTagWarriorCore();
 
+$install_directory = "/UltimateTagWarrior";
+
 class UltimateTagWarriorActions {
 
 	/* ultimate_admin_menus
@@ -30,7 +32,7 @@ function &ultimate_rewrite_rules(&$rules) {
 Allows performing administrative tasks to tags.  So far,  this means renaming tags, and deleting tags.
 */
 function ultimate_tag_admin() {
-	global $wpdb, $utw, $table_prefix, $user_level, $tabletags, $tablepost2tag;
+	global $wpdb, $utw, $table_prefix, $user_level, $tabletags, $tablepost2tag, $install_directory;
 
 	if ( $user_level < 3 ) {
 		echo "You gots to be at least this tall to play with tags : 3.  You are $user_level";
@@ -38,7 +40,7 @@ function ultimate_tag_admin() {
 	}
 
 	$showtable = true;
-	$siteurl = get_option('home');
+	$siteurl = get_option('siteurl');
 	echo "<div class=\"wrap\">";
 	echo "<h2>Tag Management</h2>";
 
@@ -216,7 +218,7 @@ SQL;
 		echo <<<OPTIONS
 	<fieldset class="options">
 	<legend>Help!</legend>
-	<a href="$siteurl/wp-content/plugins/UltimateTagWarrior/ultimate-tag-warrior-help.html" target="_new">Local help</a> | <a href="http://www.neato.co.nz/ultimate-tag-warrior" target="_new">Author help</a>
+	<a href="$siteurl/wp-content/plugins$install_directory/ultimate-tag-warrior-help.html" target="_new">Local help</a> | <a href="http://www.neato.co.nz/ultimate-tag-warrior" target="_new">Author help</a>
 	</fieldset>
 	<fieldset class="options">
 	<legend>Configuration</legend>
@@ -253,11 +255,18 @@ OPTIONS;
 		if ($tags) {
 			echo "<form action=\"$siteurl/wp-admin/edit.php\">";
 			echo "<select name=\"edittag\">";
-				foreach($tags as $tag) {
-					echo "<option value=\"$tag->ID\">$tag->tag</option>";
-				}
-			echo <<<FORMTEXT
-				</select> <input type="text" name="renametagvalue"> <input type="submit" name="updateaction" value="Rename"> <input type="submit" name="updateaction" value="Delete Tag" OnClick="javascript:return(confirm('Are you sure you want to delete this tag?'))"></fieldset>
+			foreach($tags as $tag) {
+				echo "<option value=\"$tag->ID\">$tag->tag</option>";
+			}
+
+			echo "</select> <input type=\"text\" name=\"renametagvalue\"> <input type=\"submit\" name=\"updateaction\" value=\"Rename\"> <input type=\"submit\" name=\"updateaction\" value=\"Delete Tag\" OnClick=\"javascript:return(confirm('Are you sure you want to delete this tag?'))\">";
+
+		} else {
+			echo "<p>No tags are in use at the moment.</p>";
+		}
+		echo "</fieldset>";
+
+		echo <<<FORMTEXT
 			<fieldset class="options"><legend>Tidy Tags</legend>
 			<p>Tidy Tags is a scary, scary thing.  <em>Make sure you back up your database before clicking the button.</em></p>
 			<p>Tidy Tags will delete any tag&lt;-&gt;post associations which have either a deleted tag or deleted post;  delete any tags not associated with a post;  and merge tags with the same name into single tags.</p>
@@ -280,9 +289,6 @@ OPTIONS;
 			<input type="hidden" name="action" value="savetagupdate">
 			<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php"></form>
 FORMTEXT;
-		} else {
-			echo "<p>No tags are in use at the moment.</p>";
-		}
 	}
 	echo "</div>";
 }
@@ -435,8 +441,8 @@ function ultimate_add_tags_to_rss($the_list, $type="") {
 }
 
 function ultimate_add_ajax_javascript() {
-
-$rpcurl = get_option('home') . "/wp-content/plugins/UltimateTagWarrior/ultimate-tag-warrior-ajax.php";
+global $install_directory;
+$rpcurl = get_option('home') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
 
 echo <<<JAVASCRIPT
 <script language="javascript">

@@ -569,12 +569,12 @@ SQL;
 		$format = str_replace("%tagrelweightfontsize%", $this->GetFontSizeForWeight($tag->relativeweight), $format);
 
 		$format = str_replace('%technoratitag%', "<a href=\"http://www.technorati.com/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
-		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/tags/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%delicioustag%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 
 		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/tags/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
