@@ -442,7 +442,7 @@ function ultimate_add_tags_to_rss($the_list, $type="") {
 
 function ultimate_add_ajax_javascript() {
 global $install_directory;
-$rpcurl = get_option('home') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
+$rpcurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
 
 echo <<<JAVASCRIPT
 <script language="javascript">

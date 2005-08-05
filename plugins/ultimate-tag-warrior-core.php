@@ -540,7 +540,10 @@ SQL;
 		$tag_display = str_replace('-',' ',$tag_display);
 		$tag_name = strtolower($tag->tag);
 		$baseurl = get_option('utw_base_url');
-		$siteurl = get_option('home');
+		$home = get_option('home');
+		$siteurl = get_option('siteurl');
+
+
 
 		$prettyurls = get_option('utw_use_pretty_urls');
 
@@ -548,11 +551,11 @@ SQL;
 
 		// This feels so... dirty.
 		if ($prettyurls == "yes") {
-			$format = str_replace('%tagurl%', "$siteurl$baseurl$tag_name", $format);
-			$format = str_replace('%taglink%', "<a href=\"$siteurl$baseurl$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+			$format = str_replace('%tagurl%', "$home$baseurl$tag_name", $format);
+			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		} else {
-			$format = str_replace('%tagurl%', "$siteurl/index.php?tag=$tag_name", $format);
-			$format = str_replace('%taglink%', "<a href=\"$siteurl/index.php?tag=$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+			$format = str_replace('%tagurl%', "$home/index.php?tag=$tag_name", $format);
+			$format = str_replace('%taglink%', "<a href=\"$home/index.php?tag=$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		}
 
 		$format = str_replace('%tag%', $tag_name, $format);
