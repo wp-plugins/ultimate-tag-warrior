@@ -519,6 +519,22 @@ SQL;
 		if ($order <> "tag" && $order <> "weight") { $order = "weight"; }
 		if ($direction <> "asc" && $direction <> "desc") { $direction = "desc"; }
 
+
+		if ($order == "tag" && $direction == "asc") {
+			$sort = "SortWeightedTagsAlphaAsc";
+			$orderclause = "order by weight desc";
+		} else if ($order == "tag" && $direction == "desc") {
+			$sort = "SortWeightedTagsAlphaDesc";
+			$orderclause = "order by weight desc";
+		} else if ($order == "weight" && $direction == "asc") {
+			$sort = "SortWeightedTagsWeightAsc";
+			$orderclause = "order by weight asc";
+		} else if ($order == "weight" && $direction == "desc") {
+			$sort = "SortWeightedTagsWeightDesc";
+			$orderclause = "order by weight desc";
+		}
+
+
 		$totaltags = $this->GetDistinctTagCount();
 		$maxtag = $this->GetMostPopularTagCount();
 
@@ -536,11 +552,36 @@ SQL;
 			 AND post_status = 'publish'
 
 			group by t.tag
-			order by $order $direction
+			$orderclause
 			limit $limit
 SQL;
 
-		return $wpdb->get_results($query);
+		$results = $wpdb->get_results($query);
+
+		usort($results, array("UltimateTagWarriorCore",$sort));
+
+
+		return array_slice($results, 0, $limit);
+	}
+
+	function SortWeightedTagsAlphaAsc($x, $y) {
+		return strcmp(strtolower($x->tag), strtolower($y->tag));
+	}
+
+	function SortWeightedTagsAlphaDesc($x, $y) {
+		return strcmp(strtolower($y->tag), strtolower($x->tag));
+	}
+
+	function SortWeightedTagsWeightAsc($x, $y) {
+		if($x->weight > $y->weight) return 1;
+		if($x->weight < $y->weight) return -1;
+		return strcmp(strtolower($x->tag), strtolower($y->tag));
+	}
+
+	function SortWeightedTagsWeightDesc($x, $y) {
+		if($y->weight > $x->weight) return 1;
+		if($y->weight < $x->weight) return -1;
+		return strcmp(strtolower($y->tag), strtolower($x->tag));
 	}
 
 	function GetDistinctTagCount() {
