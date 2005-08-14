@@ -1,10 +1,70 @@
 <?php
 $tabletags = $table_prefix . "tags";
 $tablepost2tag = $table_prefix . "post2tag";
-
-$tag_cache;
+$current_build = 1;
 
 class UltimateTagWarriorCore {
+
+	/* Meh.  Comparing x.y.z versions is more effort than I'm prepared
+	   to go to.  '*/
+	function CheckForInstall() {
+		global $current_build, $wpdb, $tabletags, $tablepost2tag;
+
+		$installed_build = get_option('utw_installed_build');
+
+		if ($installed_build == '' || $installed_build < 1) {
+			$q = <<<SQL
+			CREATE TABLE IF NOT EXISTS $tabletags (
+			  ID int(11) NOT NULL auto_increment,
+			  tag varchar(255) NOT NULL default '',
+			  PRIMARY KEY  (ID)
+			) TYPE=MyISAM;
+SQL;
+
+			$wpdb->query($q);
+
+			$q = <<<SQL
+			CREATE TABLE IF NOT EXISTS $tablepost2tag (
+			  rel_id int(11) NOT NULL auto_increment,
+			  tag_id int(11) NOT NULL default '0',
+			  post_id int(11) NOT NULL default '0',
+			  PRIMARY KEY  (rel_id)
+			) TYPE=MyISAM;
+SQL;
+
+			$wpdb->query($q);
+
+			add_option('utw_include_technorati_links', 'yes', 'Indicates whether technorati links should be automatically appended to the content.', 'yes');
+			add_option('utw_include_local_links', 'no', 'Indicates whether local tag links should be automatically appended to the content.', 'yes');
+			add_option('utw_base_url', '/tag/', 'The base url for tag links i.e. {base url}{sometag}', 'yes');
+			add_option('utw_include_categories_as_tags', 'no', 'Will include any selected categories as tags', 'yes');
+
+			add_option('utw_use_pretty_urls', 'no', 'Use /tag/tag urls instead of index.php?tag=tag urls', 'yes');
+
+			add_option('utw_tag_cloud_max_color', '#000000', 'The color of popular tags in tag clouds', 'yes');
+			add_option('utw_tag_cloud_min_color', '#FFFFFF', 'The color of unpopular tags in tag clouds', 'yes');
+
+			add_option('utw_tag_cloud_max_font', '250', 'The maximum font size (as a percentage) for popular tags in tag clouds', 'yes');
+			add_option('utw_tag_cloud_min_font', '70', 'The minimum font size (as a percentage) unpopular tags in tag clouds', 'yes');
+
+			add_option ('utw_tag_cloud_font_units', '%', 'The units to display the font sizes with, on tag clouds.');
+
+			add_option('utw_tag_line_max_color', '#000000', 'The color of popular tags in a tag line', 'yes');
+			add_option('utw_tag_line_min_color', '#FFFFFF', 'The color of unpopular tags in a tag line', 'yes');
+
+			add_option('utw_long_tail_max_color', '#000000', 'The color of popular tags in a long tail chart', 'yes');
+			add_option('utw_long_tail_min_color', '#FFFFFF', 'The color of unpopular tags in a long tail chart', 'yes');
+
+			add_option('utw_always_show_links_on_edit_screen', 'no', 'Always display existing tags as links; regardles of how many there are', 'yes');
+		}
+
+		if ($installed_build < 2) {
+			// Stuff for the next build!
+			// and so on...
+		}
+
+		update_option('utw_installed_build', $current_build);
+	}
 
 	/* Fundamental functions for dealing with tags */
 	/* The post corresponding to the postID are updated to be the tags in the list.  Previously assigned
@@ -539,11 +599,14 @@ SQL;
 		$tag_display = str_replace('_',' ', $tag->tag);
 		$tag_display = str_replace('-',' ',$tag_display);
 		$tag_name = strtolower($tag->tag);
+
+		$trati_tag_name = str_replace(' ', '+', $tag_display);
+		$flickr_tag_name = str_replace(' ', '', $tag_display);
+		$wiki_tag_name = str_replace(' ', '_', $tag_display);
+
 		$baseurl = get_option('utw_base_url');
 		$home = get_option('home');
 		$siteurl = get_option('siteurl');
-
-
 
 		$prettyurls = get_option('utw_use_pretty_urls');
 
@@ -561,6 +624,7 @@ SQL;
 		$format = str_replace('%tag%', $tag_name, $format);
 		$format = str_replace('%tagdisplay%', $tag_display, $format);
 		$format = str_replace('%tagcount%', $tag->count, $format);
+
 		$format = str_replace('%tagweight%', $tag->weight, $format);
 		$format = str_replace('%tagweightint%', ceil($tag->weight), $format);
 		$format = str_replace("%tagweightcolor%", $this->GetColorForWeight($tag->weight), $format);
@@ -571,15 +635,15 @@ SQL;
 		$format = str_replace("%tagrelweightcolor%", $this->GetColorForWeight($tag->relativeweight), $format);
 		$format = str_replace("%tagrelweightfontsize%", $this->GetFontSizeForWeight($tag->relativeweight), $format);
 
-		$format = str_replace('%technoratitag%', "<a href=\"http://www.technorati.com/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
-		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/tags/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+		$format = str_replace('%technoratitag%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\">$tag_display</a>", $format);
+		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/tags/$flickr_tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%delicioustag%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
-		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\">$tag_display</a>", $format);
 
-		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/tags/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
 		if ($post->ID) {
 			$format = str_replace('%postid%', $post->ID, $format);
@@ -632,7 +696,13 @@ SQL;
 	}
 
 	function GetFormatForType($formattype) {
-		global $user_level;
+		global $user_level, $post;
+
+		if ($post->ID) {
+			$postid = $post->ID;
+		} else {
+			$postid = $_REQUEST["post"];
+		}
 
 		switch($formattype) {
 			case "htmllist":
@@ -646,23 +716,38 @@ SQL;
 
 			case "superajax":
 			case "superajaxitem":
-				$default = "<span id=\"tags-%postid%-%tag%\">%taglink%";
-				if ($user_level > 3) {
-					$default .= "[<a href=\"javascript:sndReq('del', '%tag%', '%postid%')\">-</a>]";
-					$post = " <input type=\"text\" size=\"9\" id=\"addTag-%postid%\"> <input type=\"button\" value=\"+\" onClick=\"sndReq('add', document.getElementById('addTag-%postid%').value, '%postid%')\">";
+			case "superajaxrelated":
+			case "superajaxrelateditem":
+
+				$relStr = "";
+				if ($formattype == "superajaxrelated" || $formattype == "superajaxrelateditem") {
+					$relStr = "rel";
 				}
 
-				$default .= "<a href=\"javascript:sndReq('expand', '%tag%', '%postid%')\">&raquo;</a> </span>";
-				$post .= "</span>";
+				$default = "<span id=\"tags-%postid%-%tag%\">%taglink%";
+				if ($user_level > 3 && $postid != "") {
+					if ($formattype == 'superajaxrelated' || $formattype == 'superajaxrelateditem') {
+						$default .= "[<a href=\"javascript:sndReq('add', '%tag%', '%postid%', '$formattype')\">+</a>]";
+					} else {
+						$default .= "[<a href=\"javascript:sndReq('del', '%tag%', '%postid%', '$formattype')\">-</a>]";
+					}
+					$aft = " <input type=\"text\" size=\"9\" id=\"addTag-%postid%\"> <input type=\"button\" value=\"+\" onClick=\"sndReq('add', document.getElementById('addTag-%postid%').value, '%postid%', '$formattype')\">";
+				}
+
+				$default .= "<a href=\"javascript:sndReq('expand$relStr', '%tag%', '%postid%', '$formattype')\">&raquo;</a> </span>";
+				$aft .= "</span>";
 				if ($formattype == "superajax") {
-					return array("pre"=>"<span id=\"tags-%postid%\">","default"=>$default, "post"=>"$post");
+					return array("pre"=>"<span id=\"tags-%postid%\">","default"=>$default, "post"=>"$aft");
 				} else {
 					return $default;
 				}
 
 
 			case "linkset":
-				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%')\">&laquo;</a>&nbsp;";
+			case "linksetrel":
+				$newFormat = "superajaxitem";
+				if ($formattype == "linksetrel") { $newFormat = "superajaxrelated"; }
+				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&nbsp;";
 
 			case "weightedlinearbar":
 				return array("default"=>"<td width=\"%tagweightint%%\" style=\"background-color:%tagrelweightcolor%; border-right:1px solid black;\"><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div>&nbsp;</div></a></td>", "pre"=>"<table cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid black; border-right:0px\" width=\"100%\"><tr>", "post"=>"</tr></table>");
@@ -750,13 +835,7 @@ CSS;
 
 		return intval($fontsize) . $units;
 	}
-
-
-
-
-
 }
-
 
 
 /* ultimate_get_posts()

@@ -459,8 +459,8 @@ function createRequestObject() {
 
 var http = createRequestObject();
 
-function sndReq(action, tag, post) {
-  	http.open('get', '$rpcurl?action='+action+'&tag='+tag+'&post='+post);
+function sndReq(action, tag, post, format) {
+  	http.open('get', '$rpcurl?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
     http.onreadystatechange = handleResponse;
     http.send(null);
 }
@@ -480,7 +480,7 @@ function handleResponse() {
 JAVASCRIPT;
 }
 
-/*
+/* Maaaaaybe some day...
 function ultimate_posts_join() {
 	if ($_GET["tag"] != "") {
 		global $table_prefix, $wpdb;
@@ -529,6 +529,7 @@ function ultimate_posts_having () {
 	}
 }
 */
+
 }
 
 // Admin menu items

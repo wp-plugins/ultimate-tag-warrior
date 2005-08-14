@@ -49,14 +49,3 @@ add_option('utw_long_tail_min_color', '#FFFFFF', 'The color of unpopular tags in
 add_option('utw_always_show_links_on_edit_screen', 'no', 'Always display existing tags as links; regardles of how many there are', 'yes');
 
 ?>
-
-<p>Ultimate Tag Warrior is done with your database.  Two tables were added:</p>
-
-<dl>
-	<dt><?= $tabletags ?></dt>
-	<dd>Contains the names of tags, and their ID</dd>
-	<dt><?= $tablepost2tag ?></dt>
-	<dd>Links tags to posts</dd>
-</dl>
-
-<p>Along with a whole pile of options.</p>
