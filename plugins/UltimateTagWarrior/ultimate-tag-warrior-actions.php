@@ -22,7 +22,7 @@ function &ultimate_rewrite_rules(&$rules) {
 
 	$baseurl = get_option("utw_base_url");
 
-	$rules[substr($baseurl, 1) . "?(.*)/feed/(feed|rdf|rss|rss2|atom)/?$"] = "/index.php?tag=$1&feed=$2";
+	$rules[substr($baseurl, 1) . "?(.*)/feed/(feed|rdf|rss|rss2|atom)/?$"] = "index.php?tag=$1&feed=$2";
 
 	$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)/$"] = "index.php?tag=$1&paged=$2";
 	$rules[substr($baseurl, 1) . "?(.*)/$"] = "index.php?tag=$1";
@@ -571,7 +571,6 @@ function ultimate_tag_templates() {
 		exit;
 	} else 	if ($_GET["tag"] != "") {
 		ultimate_get_posts();
-
 		if (file_exists(TEMPLATEPATH . "/tag.php" && $_GET["feed"] == '')) {
 			include(TEMPLATEPATH . '/tag.php');
 			exit;
@@ -711,7 +710,7 @@ $jsurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate
 echo "<script language=\"javascript\" src=\"$jsurl?ajaxurl=$rpcurl\"></script>";
 }
 
-function ultimate_posts_join() {
+function ultimate_posts_join($join) {
 	if ($_GET["tag"] != "") {
 		global $table_prefix, $wpdb;
 
@@ -719,11 +718,11 @@ function ultimate_posts_join() {
 		$tablepost2tag = $table_prefix . "post2tag";
 
 		$join = " INNER JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags t on p2t.tag_id = t.tag_id ";
-		return $join;
 	}
+	return $join;
 }
 
-function ultimate_posts_where() {
+function ultimate_posts_where($where) {
 	if ($_GET["tag"] != "") {
 		global $table_prefix, $wpdb;
 
@@ -743,9 +742,8 @@ function ultimate_posts_where() {
 		}
 
 		$where = " AND t.tag IN ($taglist) ";
-
-		return $where;
 	}
+	return $where;
 }
 
 /* Maaaaaybe some day...
