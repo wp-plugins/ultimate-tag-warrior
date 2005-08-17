@@ -929,7 +929,9 @@ HAVING COUNT(p.id) = $tagcount
 ORDER BY post_date desc
 SQL;
 
-	$request = preg_replace("/GROUP BY $tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);
+	if (strpos ($request, "HAVING COUNT(ID)") == -1) {
+		$request = preg_replace("/GROUP BY $tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);
+	}
 
 	$posts = $wpdb->get_results($request);
 	// Thanks Mark! http://txfx.net/
