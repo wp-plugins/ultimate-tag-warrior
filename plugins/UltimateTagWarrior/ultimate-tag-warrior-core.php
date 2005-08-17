@@ -341,14 +341,14 @@ SQL;
 
 
 	/* Functions for the tags associated with a post */
-	function ShowTagsForPost($postID, $format) {
-		echo $this->FormatTags($this->GetTagsForPost($postID), $format);
+	function ShowTagsForPost($postID, $format, $limit) {
+		echo $this->FormatTags($this->GetTagsForPost($postID, $limit), $format);
 	}
 
-	function GetTagsForPost($postID) {
+	function GetTagsForPost($postID, $limit = -1) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
-		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID";
+		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID LIMIT $limit";
 		return($wpdb->get_results($q));
 	}
 
@@ -384,11 +384,11 @@ SQL;
 
 
 	/* Functions for the related tags */
-	function ShowRelatedTags($tags, $format) {
-		echo $this->FormatTags($this->GetRelatedTags($tags), $format);
+	function ShowRelatedTags($tags, $format, $limit) {
+		echo $this->FormatTags($this->GetRelatedTags($tags, $limit), $format);
 	}
 
-	function GetRelatedTags($tags) {
+	function GetRelatedTags($tags, $limit = -1) {
 		global $wpdb, $tabletags, $tablepost2tag;
 
 		$now = current_time('mysql', 1);
@@ -431,6 +431,7 @@ SQL;
 		AND post_status = 'publish'
 		GROUP BY p2t.tag_id
 		ORDER BY count DESC, t.tag ASC
+		LIMIT $limit
 SQL;
 
 			return $wpdb->get_results($q);
@@ -606,9 +607,13 @@ SQL;
 
 
 	/* Functions for formatting things*/
-	function FormatTags($tags, $format) {
+	function FormatTags($tags, $format, $limit = -1) {
 		if (is_array($format) && $format["pre"]) {
 			$out .= $this->FormatTag(null, $format["pre"]);
+		}
+
+		if ($limit != -1 && is_array($tags)) {
+			$tags = array_slice($tags, 0, $limit);
 		}
 
 		if ($tags) {

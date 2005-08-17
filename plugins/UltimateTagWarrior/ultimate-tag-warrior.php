@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: UTW2:  Like UTW1,  but with even greater justice.  Allows tagging posts in a non-external-system dependent way;  with a righteous data structure for advanced tagging-mayhem.
-Version: 2.6.2
+Version: 2.7.1
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -15,24 +15,24 @@ $utw = new UltimateTagWarriorCore();
 
 $utw->CheckForInstall();
 
-function UTW_ShowTagsForCurrentPost($formattype, $format="") {
+function UTW_ShowTagsForCurrentPost($formattype, $format="", $limit = -1) {
 	global $utw, $post;
 
 	if ($format == "") {
 		$format = $utw->GetFormatForType($formattype);
 	}
 
-	$utw->ShowTagsForPost($post->ID , $format);
+	$utw->ShowTagsForPost($post->ID , $format, $limit);
 }
 
-function UTW_ShowRelatedTagsForCurrentPost($formattype, $format="") {
+function UTW_ShowRelatedTagsForCurrentPost($formattype, $format="", $limit = -1) {
 	global $utw, $post;
 
 	if ($format == "") {
 		$format = $utw->GetFormatForType($formattype);
 	}
 
-	$utw->ShowRelatedTags($utw->GetTagsForPost($post->ID), $format);
+	$utw->ShowRelatedTags($utw->GetTagsForPost($post->ID), $format, $limit);
 }
 
 function UTW_ShowRelatedPostsForCurrentPost($formattype, $format="", $limit = -1) {
@@ -45,24 +45,24 @@ function UTW_ShowRelatedPostsForCurrentPost($formattype, $format="", $limit = -1
 	$utw->ShowRelatedPosts($utw->GetTagsForPost($post->ID), $format, $limit);
 }
 
-function UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="") {
+function UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="", $limit = -1) {
 	global $utw;
 
 	if ($format == "") {
 		$format = $utw->GetFormatForType($formattype);
 	}
 
-	$utw->ShowRelatedTags($utw->GetCurrentTagSet(), $format);
+	$utw->ShowRelatedTags($utw->GetCurrentTagSet(), $format, $limit);
 }
 
-function UTW_ShowCurrentTagSet($formattype, $format="") {
+function UTW_ShowCurrentTagSet($formattype, $format="", $limit = -1) {
 	global $utw;
 
 	if ($format == "") {
 		$format = $utw->GetFormatForType($formattype);
 	}
 
-	echo $utw->FormatTags($utw->GetCurrentTagSet(), $format);
+	echo $utw->FormatTags($utw->GetCurrentTagSet(), $format, $limit);
 }
 
 function UTW_ShowWeightedTagSet($formattype, $format="", $limit=150) {
