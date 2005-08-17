@@ -39,7 +39,7 @@ $seperator goes between each tag (but not at the beginning or the end of the lis
 $baseurl is the base url for the text link
 $notagmessage is what will display if there are no tags for the post.
 */
-function ultimate_show_post_tags($separator="&nbsp;", $baseurl='/tag/', $notagmessage = "No Tags", $morelinks="") {
+function ultimate_show_post_tags($separator="&nbsp;", $baseurl='/tag/', $notagmessage = "", $morelinks="") {
 	global $post, $utw;
 
 	$id = $post->postid;
@@ -80,7 +80,7 @@ $limit the maximum number of tags to display
 $postlimit the maximum number of posts to display for each tag
 */
 function ultimate_tag_archive($limit = 20, $postlimit=20) {
-	global $wpdb, $tabletags, $tablepost2tag;
+	global $wpdb, $tabletags, $tablepost2tag, $lzndomain;
 
 	$baseurl = get_option('utw_base_url');
 
@@ -101,7 +101,7 @@ function ultimate_tag_archive($limit = 20, $postlimit=20) {
 					$out .= "<a href=\"" . get_permalink($post->ID) . "\">$post->post_title</a>, ";
 				}
 				if (count($posts) == $postlimit) {
-					$out .= "<a href=\"$baseurl$tag->tag\">More from $tag->tag</a>...";
+					$out .= "<a href=\"$baseurl$tag->tag\">" . __("More from", $lzndomain) . " $tag->tag</a>...";
 				} else {
 					// trim trailing comma
 					$out = substr($out, 0, -2);
@@ -111,7 +111,7 @@ function ultimate_tag_archive($limit = 20, $postlimit=20) {
 			$out .= "</div>";
 		}
 	} else {
-		$out = "No Tags";
+		$out = __("No Tags", $lzndomain);
 	}
 	echo $out;
 }

@@ -11,7 +11,7 @@ class UltimateTagWarriorActions {
 	*/
 	function ultimate_admin_menus() {
 		// Add a new menu under Manage:
-		add_management_page('Tag Management', 'Tags', 8, basename(__FILE__), array('UltimateTagWarriorActions', 'ultimate_tag_admin'));
+		add_management_page('Tag Management', 'Tags', 8, basename(__FILE__), array('UltimateTagWarriorActions', 'ultimate_better_admin'));
 
 	}
 
@@ -22,7 +22,13 @@ function &ultimate_rewrite_rules(&$rules) {
 
 	$baseurl = get_option("utw_base_url");
 
-	$rules[substr($baseurl, 1) . "?(.*)"] = "index.php?tag=$1";
+	$rules[substr($baseurl, 1) . "?(.*)/feed/(feed|rdf|rss|rss2|atom)/?$"] = "/index.php?tag=$1&feed=$2";
+
+	$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)/$"] = "index.php?tag=$1&paged=$2";
+	$rules[substr($baseurl, 1) . "?(.*)/$"] = "index.php?tag=$1";
+
+	$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)$"] = "index.php?tag=$1&paged=$2";
+	$rules[substr($baseurl, 1) . "?(.*)$"] = "index.php?tag=$1";
 
 	return $rules;
 }
@@ -81,7 +87,7 @@ function ultimate_tag_admin() {
 			$tagids = array();
 
 			foreach ($tagset as $tag) {
-				$q = "SELECT id FROM $tabletags WHERE tag = '$tag'";
+				$q = "SELECT tag_id FROM $tabletags WHERE tag = '$tag'";
 				$thistagid = $wpdb->get_var($q);
 
 				if (is_null($thistagid)) {
@@ -113,7 +119,7 @@ function ultimate_tag_admin() {
 				$q = "delete from $tablepost2tag where tag_id = $tagid";
 				$wpdb->query($q);
 
-				$q = "delete from $tabletags where ID = $tagid";
+				$q = "delete from $tabletags where tag_id = $tagid";
 				$wpdb->query($q);
 			}
 			echo "<div class=\"updated\"><p>Tags have been updated.</p></div>";
@@ -122,7 +128,7 @@ function ultimate_tag_admin() {
 			$q = "delete from $tablepost2tag where tag_id = $tagid";
 			$wpdb->query($q);
 
-			$q = "delete from $tabletags where ID = $tagid";
+			$q = "delete from $tabletags where tag_id = $tagid";
 			$wpdb->query($q);
 
 			echo "<div class=\"updated\"><p>Tag has been deleted.</p></div>";
@@ -158,7 +164,7 @@ function ultimate_tag_admin() {
 
 	if ($showtable) {
 		$q = <<<SQL
-	select t.tag, t.ID from $tabletags t
+	select t.tag, t.tag_id from $tabletags t
 	order by t.tag
 SQL;
 
@@ -256,7 +262,7 @@ OPTIONS;
 			echo "<form action=\"$siteurl/wp-admin/edit.php\">";
 			echo "<select name=\"edittag\">";
 			foreach($tags as $tag) {
-				echo "<option value=\"$tag->ID\">$tag->tag</option>";
+				echo "<option value=\"$tag->tag_id\">$tag->tag</option>";
 			}
 
 			echo "</select> <input type=\"text\" name=\"renametagvalue\"> <input type=\"submit\" name=\"updateaction\" value=\"Rename\"> <input type=\"submit\" name=\"updateaction\" value=\"Delete Tag\" OnClick=\"javascript:return(confirm('Are you sure you want to delete this tag?'))\">";
@@ -293,6 +299,264 @@ FORMTEXT;
 	echo "</div>";
 }
 
+
+function ultimate_better_admin() {
+	global $lzndomain, $utw, $wpdb, $tableposts, $tabletags, $tablepost2tag, $install_directory;
+
+	$siteurl = get_option('siteurl');
+
+	echo '<div class="wrap">';
+
+	$configValues = array();
+
+	$configValues[] = array("setting"=>"utw_base_url", "label"=>__("Base url", $lzndomain),  "type"=>"string");
+	$configValues[] = array("setting"=>"utw_trailing_slash", 'label'=>__("Include trailing slash on tag urls", $lzndomain), 'type'=>'boolean');
+
+	$configValues[] = array("setting"=>"utw_include_local_links", "label"=>__("Automatically include local tag links", $lzndomain),  "type"=>"boolean");
+
+	$configValues[] = array("setting"=>"utw_include_technorati_links", "label"=>__("Automatically include Technorati tag links", $lzndomain),  "type"=>"boolean");
+	$configValues[] = array("setting"=>"utw_include_categories_as_tags", "label"=>__("Automatically add categories as tags", $lzndomain),  "type"=>"boolean");
+	$configValues[] = array("setting"=>"utw_use_pretty_urls", "label"=>__("Use url rewriting for local tag urls (/tag/tag instead of index.php?tag=tag)", $lzndomain),  "type"=>"boolean");
+	$configValues[] = array("setting"=>"utw_always_show_links_on_edit_screen", "label"=>__("Always display tag links on edit post page (instead of switching to a dropdown when there are many tags)", $lzndomain),  "type"=>"boolean");
+
+	$configValues[] = array("setting"=>"", "label"=>__("Tag cloud colors", $lzndomain),  "type"=>"label");
+
+	$configValues[] = array("setting"=>"utw_tag_cloud_max_color", "label"=>__("Most popular color", $lzndomain),  "type"=>"color");
+	$configValues[] = array("setting"=>"utw_tag_cloud_max_font", "label"=>__("Most popular size", $lzndomain),  "type"=>"color");
+	$configValues[] = array("setting"=>"utw_tag_cloud_min_color", "label"=>__("Least popular color", $lzndomain),  "type"=>"color");
+	$configValues[] = array("setting"=>"utw_tag_cloud_min_font", "label"=>__("Least popular size", $lzndomain),  "type"=>"color");
+
+	$configValues[] = array("setting"=>'utw_tag_cloud_font_units', 'label'=>__('Font size units', $lzndomain), "type"=>"dropdown", "options"=>array('%','pt','px','em'));
+
+	if ($_GET["action"] == "saveconfiguration") {
+		foreach($configValues as $setting) {
+			if ($setting['type'] != 'label') {
+				update_option($setting['setting'], $_GET[$setting['setting']]);
+			}
+		}
+		echo "<div class=\"updated\"><p>Updated settings</p></div>";
+	} else if ($_GET["action"] == "savetagupdate") {
+		$tagid = $_GET["edittag"];
+
+		if ($_GET["updateaction"] == "Rename") {
+			$tag = $_GET["renametagvalue"];
+
+			$tagset = explode(" ", $tag);
+
+			$q = "SELECT post_id FROM $tablepost2tag WHERE tag_id = $tagid";
+			$postids = $wpdb->get_results($q);
+
+			$tagids = array();
+
+			foreach ($tagset as $tag) {
+				$q = "SELECT tag_id FROM $tabletags WHERE tag = '$tag'";
+				$thistagid = $wpdb->get_var($q);
+
+				if (is_null($thistagid)) {
+					$q = "INSERT INTO $tabletags (tag) VALUES ('$tag')";
+					$wpdb->query($q);
+					$thistagid = $wpdb->insert_id;
+				}
+				$tagids[] = $thistagid;
+			}
+
+			$keepold = false;
+			foreach($tagids as $newtagid) {
+				if ($postids ) {
+					foreach ($postids as $postid) {
+						if ($wpdb->get_var("SELECT COUNT(*) FROM $tablepost2tag WHERE tag_id = $newtagid AND post_id = $postid->post_id") == 0) {
+							$wpdb->query("INSERT INTO $tablepost2tag (tag_id, post_id) VALUES ($newtagid, $postid->post_id)");
+						}
+					}
+				} else {
+					// I guess we were renaming something which wasn't being used...
+				}
+
+				if ($newtagid == $tagid) {
+					$keepold = true;
+				}
+			}
+
+			if (!$keepold) {
+				$q = "delete from $tablepost2tag where tag_id = $tagid";
+				$wpdb->query($q);
+
+				$q = "delete from $tabletags where tag_id = $tagid";
+				$wpdb->query($q);
+			}
+			echo "<div class=\"updated\"><p>Tags have been updated.</p></div>";
+		}
+
+		if ($_GET["updateaction"] ==__("Delete Tag", $lzndomain)) {
+			$q = "delete from $tablepost2tag where tag_id = $tagid";
+			$wpdb->query($q);
+
+			$q = "delete from $tabletags where tag_id = $tagid";
+			$wpdb->query($q);
+
+			echo "<div class=\"updated\"><p>Tag has been deleted.</p></div>";
+		}
+		if ($_GET["updateaction"] == __("Tidy Tags", $lzndomain)) {
+			$utw->TidyTags();
+			echo "<div class=\"updated\"><p>Tags have been tidied</p></div>";
+		}
+		if ($_GET["updateaction"] == __("Convert Categories to Tags", $lzndomain)) {
+			$postids = $wpdb->get_results("SELECT id FROM $wpdb->posts");
+			foreach ($postids as $postid) {
+				$utw->SaveCategoriesAsTags($postid->id);
+			}
+
+			echo "<div class=\"updated\"><p>Categories have been converted to tags</p></div>";
+		}
+		if ($_GET["updateaction"] == __("Import from Custom Field", $lzndomain)) {
+			update_option('utw_custom_field_conversion_field_name', $_GET["fieldName"]);
+			update_option('utw_custom_field_conversion_delimiter', $_GET["delimiter"]);
+
+			if ($_GET['fieldName'] && $_GET['delimiter']) {
+				$postids = $wpdb->get_results("SELECT id FROM $wpdb->posts");
+				foreach ($postids as $postid) {
+					$utw->SaveCustomFieldAsTags($postid->id, $_GET["fieldName"], $_GET["delimiter"]);
+				}
+				echo "<div class=\"updated\"><p>Tags have been imported from a custom field</p></div>";
+			} else {
+				echo "<div class=\"updated\"><p>Could not import tags from custom field</p></div>";
+			}
+		}
+		if ($_GET["updateaction"] == __("Export to Custom Field", $lzndomain)) {
+			update_option('utw_custom_field_conversion_field_name', $_GET["fieldName"]);
+			update_option('utw_custom_field_conversion_delimiter', $_GET["delimiter"]);
+
+			if ($_GET['fieldName'] && $_GET['delimiter']) {
+				$postids = $wpdb->get_results("SELECT id FROM $wpdb->posts");
+				foreach ($postids as $postid) {
+					$utw->SaveTagsAsCustomField($postid->id, $_GET["fieldName"], $_GET["delimiter"]);
+				}
+				echo "<div class=\"updated\"><p>Tags have been exported to a custom field</p></div>";
+			} else {
+				echo "<div class=\"updated\"><p>Could not export tags to custom field</p></div>";
+			}
+		}
+	}
+
+	echo "<fieldset class=\"options\"><legend>" . __("Help!", $lzndomain) . "</legend><a href=\"$siteurl/wp-content/plugins$install_directory/ultimate-tag-warrior-help.html\" target=\"_new\">" . __("Local help", $lzndomain) . "</a> | <a href=\"http://www.neato.co.nz/ultimate-tag-warrior\" target=\"_new\">" . __("Author help", $lzndomain) . "</a></fieldset>";
+	echo '<fieldset class="options"><legend>' . __('Configuration', $lzndomain) . '</legend>';
+	echo "<form action=\"$siteurl/wp-admin/edit.php\" method=\"GET\">";
+	echo "<table>";
+
+	foreach($configValues as $setting) {
+		if ($setting['type'] == 'boolean') {
+			UltimateTagWarriorActions::show_toggle($setting['setting'], $setting['label'], get_option($setting['setting']));
+		}
+
+		if ($setting['type'] == 'string') {
+			UltimateTagWarriorActions::show_string($setting['setting'], $setting['label'], get_option($setting['setting']));
+		}
+
+		if ($setting['type'] == 'color') {
+			UltimateTagWarriorActions::show_color($setting['setting'], $setting['label'], get_option($setting['setting']));
+		}
+
+		if ($setting['type'] == 'label') {
+			UltimateTagWarriorActions::show_label($setting['setting'], $setting['label'], get_option($setting['setting']));
+		}
+		if ($setting['type'] == 'dropdown') {
+			UltimateTagWarriorActions::show_dropdown($setting['setting'], $setting['label'], get_option($setting['setting']), $setting['options']);
+		}
+	}
+echo <<<CONFIGFOOTER
+	</table>
+			<input type="hidden" name="action" value="saveconfiguration">
+			<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">
+			<input type="submit" value="Save">
+		</form>
+	</fieldset>
+CONFIGFOOTER;
+
+
+	echo '<fieldset class="options"><legend>' . __("Edit Tags", $lzndomain) .'</legend>';
+OPTIONS;
+		$tags = $utw->GetPopularTags(-1, 'asc', 'tag');
+		if ($tags) {
+			echo "<form action=\"$siteurl/wp-admin/edit.php\">";
+			echo "<select name=\"edittag\">";
+			foreach($tags as $tag) {
+				echo "<option value=\"$tag->tag_id\">$tag->tag</option>";
+			}
+
+			echo '</select> <input type="text" name="renametagvalue"> <input type="submit" name="updateaction" value="' . __("Rename", $lzndomain) . '"> <input type="submit" name="updateaction" value="' . __("Delete Tag", $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __("Are you sure you want to delete this tag?", $lzndomain) . '\'))">';
+			echo '<input type="hidden" name="action" value="savetagupdate">';
+			echo '<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">';
+			echo '</form>';
+		} else {
+			echo '<p>' . __('No tags are in use at the moment.', $lzndomain) . '</p>';
+		}
+		echo "</fieldset>";
+
+		echo "<form action=\"$siteurl/wp-admin/edit.php\">";
+
+		echo '<fieldset class="options"><legend>' . __('Tidy Tags', $lzndomain) . '</legend>';
+		_e('<p>Tidy Tags is a scary, scary thing.  <em>Make sure you back up your database before clicking the button.</em></p><p>Tidy Tags will delete any tag&lt;-&gt;post associations which have either a deleted tag or deleted post;  delete any tags not associated with a post;  and merge tags with the same name into single tags.</p>');
+		echo '<input type="submit" name="updateaction" value="' . __('Tidy Tags', $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __("Are you sure you want to purge tags?", $lzndomain) . '\'))"></fieldset>';
+
+		echo '<fieldset class="options"><legend>' . __('Convert Categories to Tags', $lzndomain) . '</legend>';
+		_e('<p>Again.. very scary.. back up your database first!</p>');
+		echo '<input type="submit" name="updateaction" onClick="javascript:return(confirm(\'' . __('Are you sure you want to convert categories to tags?', $lzndomain) . '\'))" value="' . __('Convert Categories to Tags', $lzndomain) . '"></fieldset>';
+
+		echo '<fieldset class="options"><legend>' . __('Custom Fields', $lzndomain) . '</legend>';
+		_e('<p>This pair of actions allow the moving of tag information from custom fields into the tag structure,  and moving the tag structure into a custom field.</p><p>When moving information from the custom field to the tag structure,  the existing tags are retained.  However, copying the tags to the custom field <strong>will overwrite the existing values</strong>.  To retain the existing values,  do an import before the export.</p><p><strong>This stuff seems to work,  but backup your database before trying,  just in case.</strong></p>', $lzndomain);
+		echo '<table><tr><td>' . __("Custom field name", $lzndomain) . '</td><td><input type="text" name="fieldName" value="' . $fieldName . '" /></td></tr>';
+		echo '<tr><td>' . __("Tag delimiter", $lzndomain) . '</td><td><input type="text" name="delimiter" value="' . $delimiter . '" /></td></tr></table>';
+		echo '<input type="submit" name="updateaction" value="' . __("Import from Custom Field", $lzndomain) . '" />';
+		echo '<input type="submit" name="updateaction" value="' . __("Export to Custom Field", $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __('Beware:  This will overwrite any data in the custom field.  Continue?', $lzndomain) . '\'))"/></fieldset>';
+
+		echo '<input type="hidden" name="action" value="savetagupdate">';
+		echo '<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">';
+		echo '</form>';
+}
+
+function show_dropdown($settingName, $label, $value, $options) {
+	echo "<tr><td>$label</td><td><select name=\"$settingName\">";
+
+	foreach($options as $option) {
+		echo "<option value=\"$option\"";
+		if ($value == $option) {
+			echo " selected";
+		}
+		echo ">$option</option>";
+	}
+
+	echo "</select></td></tr>";
+FORMWIDGET;
+}
+
+function show_label($settingName, $label, $value) {
+	echo <<<FORMWIDGET
+<tr><td colspan="2"><strong>$label</strong></td></tr>
+FORMWIDGET;
+}
+
+function show_color($settingName, $label, $value) {
+	echo <<<FORMWIDGET
+<tr><td>$label</td><td><input type="text" name="$settingName" value="$value" maxlength="7" size="9"></td></tr>
+FORMWIDGET;
+}
+
+function show_string($settingName, $label, $value) {
+	echo <<<FORMWIDGET
+<tr><td>$label</td><td><input type="text" name="$settingName" value="$value"></td></tr>
+FORMWIDGET;
+}
+
+function show_toggle($settingName, $label, $value) {
+	if ($value == 'yes') {
+		$yeschecked = " checked";
+	} else {
+		$nochecked = " checked";
+	}
+	echo <<<FORMWIDGET
+<tr><td>$label</td><td><label for="y$settingName">Yes </label><input type="radio" name="$settingName" id="y$settingName" value="yes" $yeschecked> <label for="n$settingName">No</label> <input type="radio" name="$settingName" id="n$settingName" value="no" $nochecked></td></tr>
+FORMWIDGET;
+}
 
 /*
 ultimate_tag_templates
@@ -372,7 +636,7 @@ function ultimate_display_tag_widget() {
 	}
 
 
-    $q = "select t.tag from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id and p2t.post_id=$postid";
+    $q = "select t.tag from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id and p2t.post_id=$postid";
     $tags = $wpdb->get_results($q);
 
     if ($tags) {
@@ -414,13 +678,13 @@ JAVASCRIPT;
 }
 
 function ultimate_the_content_filter($thecontent='') {
-	global $post, $utw;
+	global $post, $utw, $lzndomain;
 
 	if (get_option('utw_include_local_links') == 'yes') {
 		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), "%taglink% ");
 	}
 	if (get_option('utw_include_technorati_links') == 'yes') {
-		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), array("first"=>"Technorati Tags: %technoratitag% ", "default"=>"%technoratitag% ", "none"=>""));
+		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), array("first"=>__("Technorati Tags", $lzndomain) . ": %technoratitag% ", "default"=>"%technoratitag% ", "none"=>""));
 	}
 	return $thecontent;
 }
@@ -443,44 +707,10 @@ function ultimate_add_tags_to_rss($the_list, $type="") {
 function ultimate_add_ajax_javascript() {
 global $install_directory;
 $rpcurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
-
-echo <<<JAVASCRIPT
-<script language="javascript">
-function createRequestObject() {
-    var ro;
-    var browser = navigator.appName;
-    if(browser == "Microsoft Internet Explorer"){
-        ro = new ActiveXObject("Microsoft.XMLHTTP");
-    }else{
-        ro = new XMLHttpRequest();
-    }
-    return ro;
+$jsurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax-js.php";
+echo "<script language=\"javascript\" src=\"$jsurl?ajaxurl=$rpcurl\"></script>";
 }
 
-var http = createRequestObject();
-
-function sndReq(action, tag, post, format) {
-  	http.open('get', '$rpcurl?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
-    http.onreadystatechange = handleResponse;
-    http.send(null);
-}
-
-function handleResponse() {
-    if(http.readyState == 4){
-        var response = http.responseText;
-        var update = new Array();
-
-        if(response.indexOf('|' != -1)) {
-            update = response.split('|');
-            document.getElementById("tags-" + update[0]).innerHTML = update[1];
-        }
-    }
-}
-</script>
-JAVASCRIPT;
-}
-
-/* Maaaaaybe some day...
 function ultimate_posts_join() {
 	if ($_GET["tag"] != "") {
 		global $table_prefix, $wpdb;
@@ -488,7 +718,7 @@ function ultimate_posts_join() {
 		$tabletags = $table_prefix . "tags";
 		$tablepost2tag = $table_prefix . "post2tag";
 
-		$join = " INNER JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags t on p2t.tag_id = t.id ";
+		$join = " INNER JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags t on p2t.tag_id = t.tag_id ";
 		return $join;
 	}
 }
@@ -517,6 +747,8 @@ function ultimate_posts_where() {
 		return $where;
 	}
 }
+
+/* Maaaaaybe some day...
 
 function ultimate_posts_having () {
 	if ($_GET["tag"] != "") {
@@ -549,8 +781,8 @@ add_action('delete_post', array('UltimateTagWarriorActions', 'ultimate_delete_po
 // Display tag pages
 add_action('template_redirect', array('UltimateTagWarriorActions','ultimate_tag_templates'));
 
-// add_filter('posts_join', array('UltimateTagWarriorActions','ultimate_posts_join'));
-// add_filter('posts_where', array('UltimateTagWarriorActions','ultimate_posts_where'));
+add_filter('posts_join', array('UltimateTagWarriorActions','ultimate_posts_join'));
+add_filter('posts_where', array('UltimateTagWarriorActions','ultimate_posts_where'));
 // add_filter('posts_having',array('UltimateTagWarriorActions','ultimate_posts_having'));
 
 // URL rewriting

@@ -21,7 +21,7 @@ $limit the maximum number of tags to display
 $postlimit the maximum number of posts to display for each tag
 */
 function UTW_TagArchive ($limit = 20, $postlimit=20) {
-	global $wpdb, $tabletags, $tablepost2tag, $utw;
+	global $wpdb, $tabletags, $tablepost2tag, $utw, $lzndomain;
 
 	$baseurl = get_option('utw_base_url');
 
@@ -31,7 +31,7 @@ function UTW_TagArchive ($limit = 20, $postlimit=20) {
 			$out .= "<div class=\"tagarchive\">";
 			$out .= "<div class=\"tagarchivename\">" . $utw->FormatTag($tag, "%taglink%") . " - " . $tag->count . "</div>";
 
-			$q = "select p.ID, p.post_title from $tabletags t inner join $tablepost2tag p2t on p2t.tag_id = t.id inner join $wpdb->posts p on p2t.post_id = p.ID and t.tag='$tag->tag' limit $postlimit";
+			$q = "select p.ID, p.post_title from $tabletags t inner join $tablepost2tag p2t on p2t.tag_id = t.tag_id inner join $wpdb->posts p on p2t.post_id = p.ID and t.tag='$tag->tag' limit $postlimit";
 			$posts = $utw->GetPostsForTag($tag);
 
 			$out .= "<div class=\"tagarchiveposts\">";
@@ -41,7 +41,7 @@ function UTW_TagArchive ($limit = 20, $postlimit=20) {
 					$out .= "<a href=\"" . get_permalink($post->ID) . "\">$post->post_title</a>, ";
 				}
 				if (count($posts) == $postlimit) {
-					$out .= $utw->FormatTag($tag, "<a href=\"%tagurl%\">More from %tagdisplay%...</a>");;
+					$out .= $utw->FormatTag($tag, "<a href=\"%tagurl%\">" . __("More from", $lzndomain) . " %tagdisplay%...</a>");;
 				} else {
 					// trim trailing comma
 					$out = substr($out, 0, -2);
@@ -51,7 +51,7 @@ function UTW_TagArchive ($limit = 20, $postlimit=20) {
 			$out .= "</div>";
 		}
 	} else {
-		$out = "No Tags";
+		$out = __("No Tags", $lzndomain);
 	}
 	echo $out;
 }

@@ -1,7 +1,8 @@
 <?php
 $tabletags = $table_prefix . "tags";
 $tablepost2tag = $table_prefix . "post2tag";
-$current_build = 1;
+$lzndomain = "ultimate-tag-warrior";
+$current_build = 3;
 
 class UltimateTagWarriorCore {
 
@@ -59,8 +60,8 @@ SQL;
 		}
 
 		if ($installed_build < 2) {
-			// Stuff for the next build!
-			// and so on...
+			$q = "ALTER TABLE $tabletags CHANGE id tag_id int(11) AUTO_INCREMENT";
+			$wpdb->query($q);
 		}
 
 		update_option('utw_installed_build', $current_build);
@@ -76,7 +77,7 @@ SQL;
 
 		foreach($tags as $tag) {
 			if ($tag <> "") {
-				$q = "SELECT id FROM $tabletags WHERE tag='$tag' limit 1";
+				$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 				$tagid = $wpdb->get_var($q);
 
 				if (is_null($tagid)) {
@@ -116,7 +117,7 @@ SQL;
 
 		if ($tag <> "") {
 
-			$q = "SELECT id FROM $tabletags WHERE tag='$tag' limit 1";
+			$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 			$tagid = $wpdb->get_var($q);
 
 			if (is_null($tagid)) {
@@ -140,7 +141,7 @@ SQL;
 
 		if ($tag <> "") {
 
-			$q = "SELECT id FROM $tabletags WHERE tag='$tag' limit 1";
+			$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 			$tagid = $wpdb->get_var($q);
 
 			if (!is_null($tagid)) {
@@ -152,7 +153,7 @@ SQL;
 			$q = "SELECT count(*) FROM $tablepost2tag WHERE tag_id = '$tagid'";
 
 			if ( 0 == $wpdb->get_var($q)) {
-				$q = "DELETE FROM $tabletag WHERE ID = $tagid";
+				$q = "DELETE FROM $tabletag WHERE tag_id = $tagid";
 				$wpdb->query($q);
 			}
 		}
@@ -287,25 +288,25 @@ SQL;
 		}
 
 		/* Phase 2:  delete any tags which are no longer in use */
-		$q = "SELECT t.id FROM $tabletags t LEFT JOIN $tablepost2tag p2t ON p2t.tag_id = t.id WHERE p2t.tag_id IS NULL";
+		$q = "SELECT t.tag_id FROM $tabletags t LEFT JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id WHERE p2t.tag_id IS NULL";
 		$orphantagids = $wpdb->get_results($q);
 
 		if ($orphantagids) {
 			foreach ($orphantagids as $orphantagid) {
-				$q = "DELETE FROM $tabletags where id = $orphantagid->id";
+				$q = "DELETE FROM $tabletags where tag_id = $orphantagid->id";
 				$wpdb->query($q);
 			}
 		}
 
 		/* Phase 3:  consolidate any duplicate tags */
-		$q = "SELECT tag, MIN(id) as lowid, COUNT(*) cnt FROM $tabletags GROUP BY tag HAVING cnt > 1";
+		$q = "SELECT tag, MIN(tag_id) as lowid, COUNT(*) cnt FROM $tabletags GROUP BY tag HAVING cnt > 1";
 		$duplicatetags = $wpdb->get_results($q);
 
 		if ($duplicatetags) {
 			foreach($duplicatetags as $duplicatetag) {
 				$trueid = $duplicatetag->lowid;
 
-				$duplicatetagids = $wpdb->get_results("SELECT id FROM $tabletags WHERE tag = '$duplicatetag->tag' AND id != $trueid");
+				$duplicatetagids = $wpdb->get_results("SELECT tag_id FROM $tabletags WHERE tag = '$duplicatetag->tag' AND tag_id != $trueid");
 				$tagidstr = "";
 				if ($duplicatetagids) {
 					foreach($duplicatetagids as $tagid) {
@@ -326,7 +327,7 @@ SQL;
 				if ($tagidstr) {
 					$wpdb->query("DELETE FROM $tablepost2tag WHERE tag_id IN ($tagidstr)");
 
-					$wpdb->query("DELETE FROM $tabletags WHERE id IN ($tagidstr)");
+					$wpdb->query("DELETE FROM $tabletags WHERE tag_id IN ($tagidstr)");
 				}
 			}
 		}
@@ -347,7 +348,7 @@ SQL;
 	function GetTagsForPost($postID) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
-		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID";
+		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID";
 		return($wpdb->get_results($q));
 	}
 
@@ -363,7 +364,7 @@ SQL;
 		   $q = <<<SQL
 		SELECT * from
 			$tabletags t, $tablepost2tag p2t, $wpdb->posts p
-		WHERE t.ID = p2t.tag_id
+		WHERE t.tag_id = p2t.tag_id
 		  AND p.ID = p2t.post_id
 		  AND t.tag = '$tag'
 		  AND post_date_gmt < '$now'
@@ -403,7 +404,7 @@ SQL;
 		$q = <<<SQL
 		SELECT p2t.post_id
 			 FROM $tablepost2tag p2t, $tabletags t, $wpdb->posts p
-			 WHERE p2t.tag_id = t.id
+			 WHERE p2t.tag_id = t.tag_id
 			 AND p2t.post_id = p.ID
 			 AND (t.tag IN ($taglist))
 			 AND post_date_gmt < '$now'
@@ -425,7 +426,7 @@ SQL;
 		WHERE p2t.post_id IN ($postidlist)
 		AND p2t.post_id = p.ID
 		AND t.tag NOT IN ($taglist)
-		AND t.id = p2t.tag_id
+		AND t.tag_id = p2t.tag_id
 		AND post_date_gmt < '$now'
 		AND post_status = 'publish'
 		GROUP BY p2t.tag_id
@@ -436,11 +437,11 @@ SQL;
 		}
 	}
 
-	function ShowRelatedPosts($tags, $format) {
-		echo $this->FormatPosts($this->GetRelatedPosts($tags), $format);
+	function ShowRelatedPosts($tags, $format, $limit=-1) {
+		echo $this->FormatPosts($this->GetRelatedPosts($tags, $limit), $format);
 	}
 
-	function GetRelatedPosts($tags) {
+	function GetRelatedPosts($tags, $limit = -1) {
 		global $wpdb, $tabletags, $tablepost2tag, $post;
 
 		$now = current_time('mysql', 1);
@@ -460,7 +461,7 @@ SQL;
 		$q = <<<SQL
 		SELECT DISTINCT p.*, count(p2t.post_id) as cnt
 			 FROM $tablepost2tag p2t, $tabletags t, $wpdb->posts p
-			 WHERE p2t.tag_id = t.id
+			 WHERE p2t.tag_id = t.tag_id
 			 AND p2t.post_id = p.ID
 			 AND (t.tag IN ($taglist))
 			 AND post_date_gmt < '$now'
@@ -468,6 +469,7 @@ SQL;
 			 $notclause
 			 GROUP BY p2t.post_id
 			 ORDER BY cnt desc
+			 LIMIT $limit
 SQL;
 
 		return $wpdb->get_results($q);
@@ -497,8 +499,8 @@ SQL;
 		$now = current_time('mysql', 1);
 
 		$query = <<<SQL
-			select tag, count(p2t.post_id) as count
-			from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id
+			select tag, t.tag_id, count(p2t.post_id) as count
+			from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id
 							  inner join $wpdb->posts p on p2t.post_id = p.ID
 			 WHERE post_date_gmt < '$now'
 			 AND post_status = 'publish'
@@ -546,7 +548,7 @@ SQL;
 
 		$query = <<<SQL
 			select tag, count(p2t.post_id) as count, ((count(p2t.post_id)/$totaltags)*100) as weight, ((count(p2t.post_id)/$maxtag)*100) as relativeweight
-			from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id
+			from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id
 							  inner join $wpdb->posts p on p2t.post_id = p.ID
 			 WHERE post_date_gmt < '$now'
 			 AND post_status = 'publish'
@@ -593,7 +595,7 @@ SQL;
 	function GetMostPopularTagCount() {
 		global $wpdb, $tabletags, $tablepost2tag;
 
-		return $wpdb->get_var("select count(p2t.post_id) cnt from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish' group by t.tag order by cnt desc limit 1");
+		return $wpdb->get_var("select count(p2t.post_id) cnt from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish' group by t.tag order by cnt desc limit 1");
 	}
 
 
@@ -637,6 +639,8 @@ SQL;
 	}
 
 	function FormatTag($tag, $format) {
+		global $install_directory;
+
 		$tag_display = str_replace('_',' ', $tag->tag);
 		$tag_display = str_replace('-',' ',$tag_display);
 		$tag_name = strtolower($tag->tag);
@@ -657,9 +661,11 @@ SQL;
 		if ($prettyurls == "yes") {
 			$format = str_replace('%tagurl%', "$home$baseurl$tag_name", $format);
 			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+			$rssurl = "$home$baseurl$tag_name/feed/rss2";
 		} else {
 			$format = str_replace('%tagurl%', "$home/index.php?tag=$tag_name", $format);
 			$format = str_replace('%taglink%', "<a href=\"$home/index.php?tag=$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+			$rssurl = "$home/index.php?tag=$tag_name&feed=rss2";
 		}
 
 		$format = str_replace('%tag%', $tag_name, $format);
@@ -677,14 +683,16 @@ SQL;
 		$format = str_replace("%tagrelweightfontsize%", $this->GetFontSizeForWeight($tag->relativeweight), $format);
 
 		$format = str_replace('%technoratitag%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\">$tag_display</a>", $format);
-		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/tags/$flickr_tag_name\" rel=\"tag\">$tag_display</a>", $format);
+		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%delicioustag%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\">$tag_display</a>", $format);
+		$format = str_replace('%rsstag%', "<a href=\"$rssurl\" rel=\"tag\">RSS</a>", $format);
 
-		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins/UltimateTagWarrior/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
 		if ($post->ID) {
 			$format = str_replace('%postid%', $post->ID, $format);
@@ -737,7 +745,7 @@ SQL;
 	}
 
 	function GetFormatForType($formattype) {
-		global $user_level, $post;
+		global $user_level, $post, $lzndomain;
 
 		if ($post->ID) {
 			$postid = $post->ID;
@@ -747,13 +755,13 @@ SQL;
 
 		switch($formattype) {
 			case "htmllist":
-				return array ("default"=>"<li>%taglink%</li>", "none"=>"<li>No Tags</li>");
+				return array ("default"=>"<li>%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
 
 			case "commalist":
-				return array ("default"=>"%taglink%, ", "last"=>"%taglink%", "none"=>"No Tags");
+				return array ("default"=>"%taglink%, ", "last"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
 
 			case "technoraticommalist":
-				return array ("default"=>"%technoratitag%, ", "last"=>"%technoratitag%", "none"=>"No Tags");
+				return array ("default"=>"%technoratitag%, ", "last"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
 
 			case "superajax":
 			case "superajaxitem":
@@ -788,7 +796,7 @@ SQL;
 			case "linksetrel":
 				$newFormat = "superajaxitem";
 				if ($formattype == "linksetrel") { $newFormat = "superajaxrelated"; }
-				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&nbsp;";
+				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&nbsp;";
 
 			case "weightedlinearbar":
 				return array("default"=>"<td width=\"%tagweightint%%\" style=\"background-color:%tagrelweightcolor%; border-right:1px solid black;\"><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div>&nbsp;</div></a></td>", "pre"=>"<table cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid black; border-right:0px\" width=\"100%\"><tr>", "post"=>"</tr></table>");
@@ -821,10 +829,10 @@ CSS;
 				return array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
 
 			case "postcommalist":
-				return array ("default"=>"%postlink%, ", "last"=>"%postlink%", "none"=>"No Related Posts");
+				return array ("default"=>"%postlink%, ", "last"=>"%postlink%", "none"=> __("No Related Posts", $lzndomain));
 
 			case "posthtmllist":
-				return array ("default"=>"<li>%postlink%</li>", "none"=>"<li>No Related Posts</li>");
+				return array ("default"=>"<li>%postlink%</li>", "none"=>"<li>" . __("No Related Posts", $lzndomain) . "</li>");
 
 			case "custom":
 				return "";
@@ -883,7 +891,7 @@ CSS;
 Retrieves the posts for the tags specified in $_GET["tag"].  Gets the intersection when there are multiple tags.
 */
 function ultimate_get_posts() {
-	global $wpdb, $table_prefix, $posts, $table_prefix, $tableposts, $id, $wp_query;
+	global $wpdb, $table_prefix, $posts, $table_prefix, $tableposts, $id, $wp_query, $request;
 	$tabletags = $table_prefix . 'tags';
 	$tablepost2tag = $table_prefix . "post2tag";
 
@@ -904,7 +912,7 @@ function ultimate_get_posts() {
    $q = <<<SQL
 SELECT * from
 	$tabletags t, $tablepost2tag p2t, $tableposts p
-WHERE t.ID = p2t.tag_id
+WHERE t.tag_id = p2t.tag_id
   AND p.ID = p2t.post_id
   AND t.tag IN ($taglist)
   AND post_date_gmt < '$now'
@@ -914,7 +922,9 @@ HAVING COUNT(p.id) = $tagcount
 ORDER BY post_date desc
 SQL;
 
-	$posts = $wpdb->get_results($q);
+	$request = preg_replace("/GROUP BY $tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);
+
+	$posts = $wpdb->get_results($request);
 	// Thanks Mark! http://txfx.net/
 	$posts = apply_filters('the_posts', $posts);
 	$wp_query->posts = $posts;

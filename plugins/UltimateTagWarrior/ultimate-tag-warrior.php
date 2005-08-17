@@ -9,6 +9,7 @@ Author URI: http://www.neato.co.nz
 */
 include_once('ultimate-tag-warrior-core.php');
 include_once('ultimate-tag-warrior-actions.php');
+load_plugin_textdomain('ultimate-tag-warrior');
 
 $utw = new UltimateTagWarriorCore();
 
@@ -34,14 +35,14 @@ function UTW_ShowRelatedTagsForCurrentPost($formattype, $format="") {
 	$utw->ShowRelatedTags($utw->GetTagsForPost($post->ID), $format);
 }
 
-function UTW_ShowRelatedPostsForCurrentPost($formattype, $format="") {
+function UTW_ShowRelatedPostsForCurrentPost($formattype, $format="", $limit = -1) {
 	global $utw, $post;
 
 	if ($format == "") {
 		$format = $utw->GetFormatForType($formattype);
 	}
 
-	$utw->ShowRelatedPosts($utw->GetTagsForPost($post->ID), $format);
+	$utw->ShowRelatedPosts($utw->GetTagsForPost($post->ID), $format, $limit);
 }
 
 function UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="") {

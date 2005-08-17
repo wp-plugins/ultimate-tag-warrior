@@ -34,7 +34,7 @@
 
 		case 'shrink':
 			echo "$post-$tag|";
-			echo $utw->FormatTags($utw->GetTagsForTagString('"' . $tag . '"'), $utw->GetFormatForType($format . "item"));
+			echo $utw->FormatTags($utw->GetTagsForTagString('"' . $tag . '"'), $utw->GetFormatForType($format));
 			break;
 
 		case 'shrinkrel':
