@@ -572,7 +572,7 @@ function ultimate_tag_templates() {
 	} else 	if ($_GET["tag"] != "") {
 		ultimate_get_posts();
 
-		if (file_exists(TEMPLATEPATH . "/tag.php")) {
+		if (file_exists(TEMPLATEPATH . "/tag.php" && $_GET["feed"] == '')) {
 			include(TEMPLATEPATH . '/tag.php');
 			exit;
 		} else {
