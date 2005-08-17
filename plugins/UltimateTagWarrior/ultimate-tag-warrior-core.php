@@ -929,7 +929,7 @@ HAVING COUNT(p.id) = $tagcount
 ORDER BY post_date desc
 SQL;
 
-	if (strpos ($request, "HAVING COUNT(ID)") == -1) {
+	if (strpos($request, "HAVING COUNT(ID)") == false) {
 		$request = preg_replace("/GROUP BY $tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);
 	}
 
