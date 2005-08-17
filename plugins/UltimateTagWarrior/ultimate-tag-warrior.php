@@ -15,7 +15,7 @@ $utw = new UltimateTagWarriorCore();
 
 $utw->CheckForInstall();
 
-function UTW_ShowTagsForCurrentPost($formattype, $format="", $limit = -1) {
+function UTW_ShowTagsForCurrentPost($formattype, $format="", $limit = 0) {
 	global $utw, $post;
 
 	if ($format == "") {
@@ -25,7 +25,7 @@ function UTW_ShowTagsForCurrentPost($formattype, $format="", $limit = -1) {
 	$utw->ShowTagsForPost($post->ID , $format, $limit);
 }
 
-function UTW_ShowRelatedTagsForCurrentPost($formattype, $format="", $limit = -1) {
+function UTW_ShowRelatedTagsForCurrentPost($formattype, $format="", $limit = 0) {
 	global $utw, $post;
 
 	if ($format == "") {
@@ -35,7 +35,7 @@ function UTW_ShowRelatedTagsForCurrentPost($formattype, $format="", $limit = -1)
 	$utw->ShowRelatedTags($utw->GetTagsForPost($post->ID), $format, $limit);
 }
 
-function UTW_ShowRelatedPostsForCurrentPost($formattype, $format="", $limit = -1) {
+function UTW_ShowRelatedPostsForCurrentPost($formattype, $format="", $limit = 0) {
 	global $utw, $post;
 
 	if ($format == "") {
@@ -45,7 +45,7 @@ function UTW_ShowRelatedPostsForCurrentPost($formattype, $format="", $limit = -1
 	$utw->ShowRelatedPosts($utw->GetTagsForPost($post->ID), $format, $limit);
 }
 
-function UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="", $limit = -1) {
+function UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="", $limit = 0) {
 	global $utw;
 
 	if ($format == "") {
@@ -55,7 +55,7 @@ function UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="", $limit = -
 	$utw->ShowRelatedTags($utw->GetCurrentTagSet(), $format, $limit);
 }
 
-function UTW_ShowCurrentTagSet($formattype, $format="", $limit = -1) {
+function UTW_ShowCurrentTagSet($formattype, $format="", $limit = 0) {
 	global $utw;
 
 	if ($format == "") {

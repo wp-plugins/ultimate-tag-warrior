@@ -345,10 +345,14 @@ SQL;
 		echo $this->FormatTags($this->GetTagsForPost($postID, $limit), $format);
 	}
 
-	function GetTagsForPost($postID, $limit = -1) {
+	function GetTagsForPost($postID, $limit = 0) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
-		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID LIMIT $limit";
+		if ($limit != 0) {
+			$limitclause = "LIMIT $limit";
+		}
+
+		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID $limitclause";
 		return($wpdb->get_results($q));
 	}
 
@@ -388,7 +392,7 @@ SQL;
 		echo $this->FormatTags($this->GetRelatedTags($tags, $limit), $format);
 	}
 
-	function GetRelatedTags($tags, $limit = -1) {
+	function GetRelatedTags($tags, $limit = 0) {
 		global $wpdb, $tabletags, $tablepost2tag;
 
 		$now = current_time('mysql', 1);
@@ -420,6 +424,10 @@ SQL;
 				$postidlist = $postidlist . ", '" . $postids[$i]->post_id . "'";
 			}
 
+			if ($limit != 0) {
+				$limitclause = "LIMIT $limit";
+			}
+
 			$q = <<<SQL
 		SELECT t.tag, COUNT(p2t.post_id) AS count
 		FROM $tablepost2tag p2t, $tabletags t, $wpdb->posts p
@@ -431,18 +439,18 @@ SQL;
 		AND post_status = 'publish'
 		GROUP BY p2t.tag_id
 		ORDER BY count DESC, t.tag ASC
-		LIMIT $limit
+		$limitclause
 SQL;
 
 			return $wpdb->get_results($q);
 		}
 	}
 
-	function ShowRelatedPosts($tags, $format, $limit=-1) {
+	function ShowRelatedPosts($tags, $format, $limit=0) {
 		echo $this->FormatPosts($this->GetRelatedPosts($tags, $limit), $format);
 	}
 
-	function GetRelatedPosts($tags, $limit = -1) {
+	function GetRelatedPosts($tags, $limit = 0) {
 		global $wpdb, $tabletags, $tablepost2tag, $post;
 
 		$now = current_time('mysql', 1);
@@ -459,6 +467,10 @@ SQL;
 			$notclause = "AND p.ID != $post->ID";
 		}
 
+		if ($limit != 0) {
+			$limitclause = "LIMIT $limit";
+		}
+
 		$q = <<<SQL
 		SELECT DISTINCT p.*, count(p2t.post_id) as cnt
 			 FROM $tablepost2tag p2t, $tabletags t, $wpdb->posts p
@@ -470,7 +482,7 @@ SQL;
 			 $notclause
 			 GROUP BY p2t.post_id
 			 ORDER BY cnt desc
-			 LIMIT $limit
+			 $limitclause
 SQL;
 
 		return $wpdb->get_results($q);
@@ -547,6 +559,10 @@ SQL;
 
 		$now = current_time('mysql', 1);
 
+		if ($limit != 0) {
+			$limitclause = "LIMIT $limit";
+		}
+
 		$query = <<<SQL
 			select tag, count(p2t.post_id) as count, ((count(p2t.post_id)/$totaltags)*100) as weight, ((count(p2t.post_id)/$maxtag)*100) as relativeweight
 			from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id
@@ -556,15 +572,17 @@ SQL;
 
 			group by t.tag
 			$orderclause
-			limit $limit
+			$limitclause
 SQL;
 
 		$results = $wpdb->get_results($query);
 
 		usort($results, array("UltimateTagWarriorCore",$sort));
 
-
-		return array_slice($results, 0, $limit);
+		if ($limit != 0) {
+			$results = array_slice($results, 0, $limit);
+		}
+		return $results;
 	}
 
 	function SortWeightedTagsAlphaAsc($x, $y) {
@@ -607,12 +625,12 @@ SQL;
 
 
 	/* Functions for formatting things*/
-	function FormatTags($tags, $format, $limit = -1) {
+	function FormatTags($tags, $format, $limit = 0) {
 		if (is_array($format) && $format["pre"]) {
 			$out .= $this->FormatTag(null, $format["pre"]);
 		}
 
-		if ($limit != -1 && is_array($tags)) {
+		if ($limit != 0 && is_array($tags)) {
 			$tags = array_slice($tags, 0, $limit);
 		}
 

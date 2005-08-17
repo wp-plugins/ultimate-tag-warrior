@@ -80,23 +80,23 @@
 
 		<p>$formattype is the name of the format to use to display the list of tags.  The list of format types is <a href="#predefinedformats">here</a></p>
 		<p>$format is an optional parameter,  for using a custom formatting string.  Formatting strings are scary (: The documentation for custom formatting strings lives <a href="#customformatting">here</a>.if there's a format that you're after I'm happy to help out.</p>
-		<p>$limit is the number of things to retrieve.  The default, -1 (Except for tag clouds/graphs which default to 150),  will retrieve all of the items;  otherwise no more items than the limit will be retrieved.</p>
+		<p>$limit is the number of things to retrieve.  The default, 0 (Except for tag clouds/graphs which default to 150),  will retrieve all of the items;  otherwise no more items than the limit will be retrieved.</p>
 
 		<p>The functions that are currently available are....</p>
 		<dl>
-			<dt>UTW_ShowTagsForCurrentPost($formattype, $format="", $limit=-1)</dt>
+			<dt>UTW_ShowTagsForCurrentPost($formattype, $format="", $limit=0)</dt>
 			<dd>Shows the tags for the current post.  Put this guy inside the wordpress loop.</dd>
 
-			<dt>UTW_ShowRelatedTagsForCurrentPost($formattype, $format="", $limit=-1)</dt>
+			<dt>UTW_ShowRelatedTagsForCurrentPost($formattype, $format="", $limit=0)</dt>
 			<dd>Shows related tags for the current post.  Again,  this belongs inside the wordpress loop.</dd>
 
-			<dt>UTW_ShowRelatedPostsForCurrentPost($formattype, $format="", $limit=-1)</dt>
+			<dt>UTW_ShowRelatedPostsForCurrentPost($formattype, $format="", $limit=0)</dt>
 			<dd>Shows related posts for the current post.  This is another for inside the wordpress loop.</dd>
 
-			<dt>UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="", $limit=-1)</dt>
+			<dt>UTW_ShowRelatedTagsForCurrentTagSet($formattype, $format="", $limit=0)</dt>
 			<dd>Shows the related tags for the current requested tags (for http://somesite/tag/foo+monkey the current requested tags are foo and monkey.  Got that?  Good).  This belongs on the tag.php template.</dd>
 
-			<dt>UTW_ShowCurrentTagSet($formattype, $format="", $limit=-1)</dt>
+			<dt>UTW_ShowCurrentTagSet($formattype, $format="", $limit=0)</dt>
 			<dd>Shows the current requested tags.  Again,  belongs on tag.php</dd>
 
 			<dt>UTW_ShowWeightedTagSet($formattype, $format="", $limit=150)</dt>
