@@ -317,7 +317,7 @@ function ultimate_better_admin() {
 	$configValues[] = array("setting"=>"utw_include_technorati_links", "label"=>__("Automatically include Technorati tag links", $lzndomain),  "type"=>"boolean");
 	$configValues[] = array("setting"=>"utw_include_categories_as_tags", "label"=>__("Automatically add categories as tags", $lzndomain),  "type"=>"boolean");
 	$configValues[] = array("setting"=>"utw_use_pretty_urls", "label"=>__("Use url rewriting for local tag urls (/tag/tag instead of index.php?tag=tag)", $lzndomain),  "type"=>"boolean");
-	$configValues[] = array("setting"=>"utw_always_show_links_on_edit_screen", "label"=>__("Always display tag links on edit post page (instead of switching to a dropdown when there are many tags)", $lzndomain),  "type"=>"boolean");
+	$configValues[] = array("setting"=>"utw_always_show_links_on_edit_screen", "label"=>__("Always display tag links on edit post page (instead of switching to a dropdown when there are many tags)", $lzndomain),  "type"=>"dropdown", "options"=>array('none', 'dropdown', 'tag list'));
 
 	$configValues[] = array("setting"=>"", "label"=>__("Tag cloud colors", $lzndomain),  "type"=>"label");
 
@@ -649,28 +649,33 @@ function ultimate_display_tag_widget() {
 	echo '<fieldset id="tagsdiv">';
 	echo '<legend>Tags (Space seperated list. -\'s and _\'s display as spaces)</legend>';
 	echo "<input name=\"tagset\" type=\"text\" value=\"$taglist\" size=\"100\"><br />";
+
+	$widgetToUse = get_option('utw_always_show_links_on_edit_screen');
+
+	if ($widgetToUse != 'none') {
 		echo <<<JAVASCRIPT
-<script language="javascript">
-function addTag(tagname) {
-	document.forms[0].tagset.value += " " + tagname;
-}
-</script>
+	<script language="javascript">
+	function addTag(tagname) {
+		document.forms[0].tagset.value += " " + tagname;
+	}
+	</script>
 JAVASCRIPT;
 
 
-	echo "Add existing tag: ";
-	if ($utw->GetDistinctTagCount() <= 50 || get_option('utw_always_show_links_on_edit_screen') == "yes") {
+		echo "Add existing tag: ";
+		if ($widgetToUse=='tag list') {
 
-		$format = "<a href=\"javascript:addTag('%tag%')\">%tagdisplay%</a> ";
-		echo $utw->ShowPopularTags(-1, $format, 'tag', 'asc');
+			$format = "<a href=\"javascript:addTag('%tag%')\">%tagdisplay%</a> ";
+			echo $utw->ShowPopularTags(-1, $format, 'tag', 'asc');
 
-	} else {
-		$format = array(
-		'pre' => '<select onchange="if (document.getElementById(\'tag-menu\').value != \'\') { addTag(document.getElementById(\'tag-menu\').value) }" id="tag-menu"><option selected="selected" value="">Choose a tag</option>',
-		'default' => '<option value="%tag%">%tagdisplay% (%tagcount%)</option>',
-		'post' => '</select>');
+		} else {
+			$format = array(
+			'pre' => '<select onchange="if (document.getElementById(\'tag-menu\').value != \'\') { addTag(document.getElementById(\'tag-menu\').value) }" id="tag-menu"><option selected="selected" value="">Choose a tag</option>',
+			'default' => '<option value="%tag%">%tagdisplay% (%tagcount%)</option>',
+			'post' => '</select>');
 
-		echo $utw->ShowPopularTags(-1, $format, 'tag', 'asc');
+			echo $utw->ShowPopularTags(-1, $format, 'tag', 'asc');
+		}
 	}
   echo '</fieldset>';
 
