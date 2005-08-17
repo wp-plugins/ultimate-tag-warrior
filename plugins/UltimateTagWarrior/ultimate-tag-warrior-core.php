@@ -655,12 +655,14 @@ SQL;
 
 		$prettyurls = get_option('utw_use_pretty_urls');
 
+		if (get_option('utw_trailing_slash') == 'yes') { $trailing = "/"; }
+
 		global $post;
 
 		// This feels so... dirty.
 		if ($prettyurls == "yes") {
-			$format = str_replace('%tagurl%', "$home$baseurl$tag_name", $format);
-			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name\" rel=\"tag\">$tag_display</a>", $format);
+			$format = str_replace('%tagurl%', "$home$baseurl$tag_name$trailing", $format);
+			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name$trailing\" rel=\"tag\">$tag_display</a>", $format);
 			$rssurl = "$home$baseurl$tag_name/feed/rss2";
 		} else {
 			$format = str_replace('%tagurl%', "$home/index.php?tag=$tag_name", $format);
