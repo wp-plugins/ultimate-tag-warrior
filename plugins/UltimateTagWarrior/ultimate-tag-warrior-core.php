@@ -341,7 +341,7 @@ SQL;
 
 
 	/* Functions for the tags associated with a post */
-	function ShowTagsForPost($postID, $format, $limit) {
+	function ShowTagsForPost($postID, $format, $limit=0) {
 		echo $this->FormatTags($this->GetTagsForPost($postID, $limit), $format);
 	}
 
@@ -388,7 +388,7 @@ SQL;
 
 
 	/* Functions for the related tags */
-	function ShowRelatedTags($tags, $format, $limit) {
+	function ShowRelatedTags($tags, $format, $limit=0) {
 		echo $this->FormatTags($this->GetRelatedTags($tags, $limit), $format);
 	}
 
