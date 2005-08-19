@@ -12,8 +12,9 @@ class UltimateTagWarriorCore {
 		global $current_build, $wpdb, $tabletags, $tablepost2tag;
 
 		$installed_build = get_option('utw_installed_build');
+		if ($installed_build == '') $installed_build = 0;
 
-		if ($installed_build == '' || $installed_build < 1) {
+		if ($installed_build < 1) {
 			$q = <<<SQL
 			CREATE TABLE IF NOT EXISTS $tabletags (
 			  ID int(11) NOT NULL auto_increment,
