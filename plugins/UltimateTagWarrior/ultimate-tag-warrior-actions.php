@@ -571,9 +571,11 @@ function ultimate_tag_templates() {
 		exit;
 	} else 	if ($_GET["tag"] != "") {
 		ultimate_get_posts();
-		if (file_exists(TEMPLATEPATH . "/tag.php" && (is_null($_GET['feed']) || $_GET["feed"] == ''))) {
-			include(TEMPLATEPATH . '/tag.php');
-			exit;
+		if (file_exists(TEMPLATEPATH . "/tag.php")) {
+			if ( isset($_GET['feed']) || $_GET["feed"] == '') {
+				include(TEMPLATEPATH . '/tag.php');
+				exit;
+			}
 		} else {
 	//		include(TEMPLATEPATH . '/index.php');
 		}
