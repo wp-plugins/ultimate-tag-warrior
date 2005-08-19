@@ -571,7 +571,7 @@ function ultimate_tag_templates() {
 		exit;
 	} else 	if ($_GET["tag"] != "") {
 		ultimate_get_posts();
-		if (file_exists(TEMPLATEPATH . "/tag.php" && $_GET["feed"] == '')) {
+		if (file_exists(TEMPLATEPATH . "/tag.php" && (is_null($_GET['feed']) || $_GET["feed"] == ''))) {
 			include(TEMPLATEPATH . '/tag.php');
 			exit;
 		} else {
@@ -709,10 +709,11 @@ function ultimate_add_tags_to_rss($the_list, $type="") {
 }
 
 function ultimate_add_ajax_javascript() {
-global $install_directory;
-$rpcurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
-$jsurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax-js.php";
-echo "<script language=\"javascript\" src=\"$jsurl?ajaxurl=$rpcurl\"></script>";
+	global $install_directory;
+	$rpcurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
+	$jsurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax-js.php";
+	echo "<script language=\"javascript\" src=\"$jsurl?ajaxurl=$rpcurl\" type=\"text/javascript\"></script>";
+
 }
 
 function ultimate_posts_join($join) {
@@ -722,7 +723,7 @@ function ultimate_posts_join($join) {
 		$tabletags = $table_prefix . "tags";
 		$tablepost2tag = $table_prefix . "post2tag";
 
-		$join = " INNER JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags t on p2t.tag_id = t.tag_id ";
+		$join .= " INNER JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags t on p2t.tag_id = t.tag_id ";
 	}
 	return $join;
 }
@@ -746,7 +747,7 @@ function ultimate_posts_where($where) {
 			}
 		}
 
-		$where = " AND t.tag IN ($taglist) ";
+		$where .= " AND t.tag IN ($taglist) ";
 	}
 	return $where;
 }
