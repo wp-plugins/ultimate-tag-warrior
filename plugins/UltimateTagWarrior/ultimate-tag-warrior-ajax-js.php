@@ -29,3 +29,15 @@ function handleResponse() {
         }
     }
 }
+
+function askYahooForKeywords() {
+	http.open('POST','<?= $ajaxurl ?>?action=requestKeywords');
+	http.onreadystatechange = listYahooKeywords;
+	http.send(escape(document.getElementById('content').value));
+}
+
+function listYahooKeywords() {
+    if(http.readyState == 4){
+    	document.getElementById("suggestedTags").innerHTML = http.responseText;
+	}
+}

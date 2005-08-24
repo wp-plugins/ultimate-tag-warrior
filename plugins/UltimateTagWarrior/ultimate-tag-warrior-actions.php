@@ -681,6 +681,12 @@ JAVASCRIPT;
 	}
   echo '</fieldset>';
 
+  echo '<fieldset id="tagsuggestdiv">';
+  echo '<legend>Tag Suggestions [powered by Yahoo! Search.]</legend>';
+  echo '<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions"/>';
+  echo '<div id="suggestedTags"></div>';
+  echo '</fieldset>';
+
 }
 
 function ultimate_the_content_filter($thecontent='') {
@@ -714,7 +720,7 @@ function ultimate_add_ajax_javascript() {
 	global $install_directory;
 	$rpcurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
 	$jsurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax-js.php";
-	echo "<script language=\"javascript\" src=\"$jsurl?ajaxurl=$rpcurl\" type=\"text/javascript\"></script>";
+	echo "<script src=\"$jsurl?ajaxurl=$rpcurl\" type=\"text/javascript\"></script>";
 
 }
 
@@ -798,4 +804,5 @@ add_filter('the_content', array('UltimateTagWarriorActions', 'ultimate_the_conte
 add_filter('the_category_rss', array('UltimateTagWarriorActions', 'ultimate_add_tags_to_rss'));
 
 add_filter('wp_head', array('UltimateTagWarriorActions', 'ultimate_add_ajax_javascript'));
+add_filter('admin_head', array('UltimateTagWarriorActions', 'ultimate_add_ajax_javascript'));
 ?>
