@@ -6,7 +6,7 @@ $current_build = 3;
 
 class UltimateTagWarriorCore {
 
-	/* Meh.  Comparing x.y.z versions is more effort than I'm prepared
+	/* Comparing x.y.z versions is more effort than I'm prepared
 	   to go to.  '*/
 	function CheckForInstall() {
 		global $current_build, $wpdb, $tabletags, $tablepost2tag;
@@ -66,6 +66,11 @@ SQL;
 		}
 
 		update_option('utw_installed_build', $current_build);
+	}
+
+	function ForceInstall() {
+		update_option('utw_installed_build', 0);
+		$this->CheckForInstall();
 	}
 
 	/* Fundamental functions for dealing with tags */
@@ -635,23 +640,28 @@ SQL;
 			$tags = array_slice($tags, 0, $limit);
 		}
 
-		if ($tags) {
-			for ($i = 0; $i < count($tags); $i++) {
-				if (is_array($format)) {
-					if ($i == 0 && $format["first"]) {
-						$out .= $this->FormatTag($tags[$i], $format["first"]);
-					} else if ($i == (count($tags) -1) && $format["last"]) {
-						$out .= $this->FormatTag($tags[$i], $format["last"]);
-					} else {
-						$out .= $this->FormatTag($tags[$i], $format["default"]);
-					}
-				} else {
-					$out .= $this->FormatTag($tags[$i], $format);
-				}
-			}
+		if ((!is_array($tags) || count($tags) == 1) && $tags[0] && (is_array($format) && $format["single"])) {
+			$out .= $this->FormatTag($tags[0], $format["single"]);
 		} else {
-			if (is_array($format) && $format["none"]) {
-				$out .= $format["none"];
+
+			if ($tags) {
+				for ($i = 0; $i < count($tags); $i++) {
+					if (is_array($format)) {
+						if ($i == 0 && $format["first"]) {
+							$out .= $this->FormatTag($tags[$i], $format["first"]);
+						} else if ($i == (count($tags) -1) && $format["last"]) {
+							$out .= $this->FormatTag($tags[$i], $format["last"]);
+						} else {
+							$out .= $this->FormatTag($tags[$i], $format["default"]);
+						}
+					} else {
+						$out .= $this->FormatTag($tags[$i], $format);
+					}
+				}
+			} else {
+				if (is_array($format) && $format["none"]) {
+					$out .= $format["none"];
+				}
 			}
 		}
 
