@@ -1,4 +1,5 @@
 <?php
+ini_set("include_path", ".");
 require_once('ultimate-tag-warrior-core.php');
 $utw = new UltimateTagWarriorCore();
 
@@ -19,17 +20,17 @@ class UltimateTagWarriorActions {
 
 */
 function &ultimate_rewrite_rules(&$rules) {
+	if(get_option("utw_use_pretty_urls") == "yes") {
+		$baseurl = get_option("utw_base_url");
 
-	$baseurl = get_option("utw_base_url");
+		$rules[substr($baseurl, 1) . "?(.*)/feed/(feed|rdf|rss|rss2|atom)/?$"] = "index.php?tag=$1&feed=$2";
 
-	$rules[substr($baseurl, 1) . "?(.*)/feed/(feed|rdf|rss|rss2|atom)/?$"] = "index.php?tag=$1&feed=$2";
+		$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)/$"] = "index.php?tag=$1&paged=$2";
+		$rules[substr($baseurl, 1) . "?(.*)/$"] = "index.php?tag=$1";
 
-	$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)/$"] = "index.php?tag=$1&paged=$2";
-	$rules[substr($baseurl, 1) . "?(.*)/$"] = "index.php?tag=$1";
-
-	$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)$"] = "index.php?tag=$1&paged=$2";
-	$rules[substr($baseurl, 1) . "?(.*)$"] = "index.php?tag=$1";
-
+		$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)$"] = "index.php?tag=$1&paged=$2";
+		$rules[substr($baseurl, 1) . "?(.*)$"] = "index.php?tag=$1";
+	}
 	return $rules;
 }
 

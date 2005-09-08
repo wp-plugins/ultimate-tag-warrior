@@ -358,7 +358,7 @@ SQL;
 			$limitclause = "LIMIT $limit";
 		}
 
-		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID $limitclause";
+		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
 		return($wpdb->get_results($q));
 	}
 
@@ -383,6 +383,13 @@ SQL;
 SQL;
 
 		   return ($wpdb->get_results($q));
+	}
+
+	function GetPostHasTags($postID) {
+		global $tabletags, $tablepost2tag, $wpdb;
+
+		$q = "SELECT count(*) FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID";
+		return($wpdb->get_var($q) > 0);
 	}
 
 
@@ -419,6 +426,7 @@ SQL;
 			 AND (t.tag IN ($taglist))
 			 AND post_date_gmt < '$now'
 			 AND post_status = 'publish'
+			 ORDER BY t.tag ASC
 			 GROUP BY p2t.post_id HAVING COUNT(p2t.post_id)=$tagcount
 SQL;
 		$postids = $wpdb->get_results($q);
@@ -816,7 +824,7 @@ SQL;
 					} else {
 						$default .= "[<a href=\"javascript:sndReq('del', '%tag%', '%postid%', '$formattype')\">-</a>]";
 					}
-					$aft = " <input type=\"text\" size=\"9\" id=\"addTag-%postid%\"> <input type=\"button\" value=\"+\" onClick=\"sndReq('add', document.getElementById('addTag-%postid%').value, '%postid%', '$formattype')\">";
+					$aft = " <input type=\"text\" size=\"9\" id=\"addTag-%postid%\" /> <input type=\"button\" value=\"+\" onClick=\"sndReq('add', document.getElementById('addTag-%postid%').value, '%postid%', '$formattype')\" />";
 				}
 
 				$default .= "<a href=\"javascript:sndReq('expand$relStr', '%tag%', '%postid%', '$formattype')\">&raquo;</a> </span>";
@@ -832,10 +840,10 @@ SQL;
 			case "linksetrel":
 				$newFormat = "superajaxitem";
 				if ($formattype == "linksetrel") { $newFormat = "superajaxrelated"; }
-				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&nbsp;";
+				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&#160;";
 
 			case "weightedlinearbar":
-				return array("default"=>"<td width=\"%tagweightint%%\" style=\"background-color:%tagrelweightcolor%; border-right:1px solid black;\"><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div>&nbsp;</div></a></td>", "pre"=>"<table cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid black; border-right:0px\" width=\"100%\"><tr>", "post"=>"</tr></table>");
+				return array("post"=>"<br clear=\"all\" />", "default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay%\"><div style=\"background-color:%tagrelweightcolor%; width:%tagweightint%%; float:left\">&#160;</div></a>");
 
 			case "weightedlongtail":
 				// Thanks http://www.cssirc.com/codes/?code=23!
@@ -848,7 +856,7 @@ SQL;
 				.longtail li div {position: absolute;bottom: 0; left: 0;width: 100%;background-color:#000;}
 				</style>
 CSS;
-				return array("pre"=>"$css<ol class=\"longtail\">", "default"=>"<li><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div style=\"height:%tagrelweightint%%\"></div></a></li>", "post"=>"</ol>");
+				return array("pre"=>"$css<ol class=\"longtail\">", "default"=>"<li><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div style=\"height:%tagrelweightint%%\">&#160;</div></a></li>", "post"=>"</ol>");
 
 			case "coloredtagcloud":
 				return array("default"=>"<a href=\"%tagurl%\" style=\"color:%tagrelweightcolor%\">%tagdisplay%</a> ");

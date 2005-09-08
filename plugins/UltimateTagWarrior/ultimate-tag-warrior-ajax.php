@@ -1,4 +1,6 @@
 <?php
+ini_set("include_path", ".");
+
 require('../../../wp-blog-header.php');
 include_once('ultimate-tag-warrior-core.php');
 

@@ -9,6 +9,7 @@ Version: 1.3 Legacy
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
+ini_set("include_path", ".");
 
 include_once('ultimate-tag-warrior-core.php');
 include_once('ultimate-tag-warrior-actions.php');
