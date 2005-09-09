@@ -426,8 +426,8 @@ SQL;
 			 AND (t.tag IN ($taglist))
 			 AND post_date_gmt < '$now'
 			 AND post_status = 'publish'
-			 ORDER BY t.tag ASC
 			 GROUP BY p2t.post_id HAVING COUNT(p2t.post_id)=$tagcount
+			 ORDER BY t.tag ASC
 SQL;
 		$postids = $wpdb->get_results($q);
 		if ($postids) {
@@ -697,6 +697,9 @@ SQL;
 
 		$prettyurls = get_option('utw_use_pretty_urls');
 
+		$tags = $_GET["tag"];
+		$tagset = explode(" ", $tags);
+
 		if (get_option('utw_trailing_slash') == 'yes') { $trailing = "/"; }
 
 		global $post;
@@ -706,10 +709,12 @@ SQL;
 			$format = str_replace('%tagurl%', "$home$baseurl$tag_name$trailing", $format);
 			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name$trailing\" rel=\"tag\">$tag_display</a>", $format);
 			$rssurl = "$home$baseurl$tag_name/feed/rss2";
+			$tagseturl = "$home$baseurl" . implode('+', $tagset) . 	"+$tag_name$trailing";
 		} else {
 			$format = str_replace('%tagurl%', "$home/index.php?tag=$tag_name", $format);
 			$format = str_replace('%taglink%', "<a href=\"$home/index.php?tag=$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 			$rssurl = "$home/index.php?tag=$tag_name&feed=rss2";
+			$tagseturl = "$home/index.php?tag=" . implode('+', $tagset) . "+$tag_name";
 		}
 
 		$format = str_replace('%tag%', $tag_name, $format);
@@ -732,11 +737,21 @@ SQL;
 		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%rsstag%', "<a href=\"$rssurl\" rel=\"tag\">RSS</a>", $format);
 
+		$format = str_replace('%icons%', '%technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%%intersectionicon%', $format);
+
 		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+
+		if (count($tagset)>0) {
+			$format = str_replace('%intersectionicon%', "<a href=\"$tagseturl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/intersectionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+			$format = str_replace('%unionicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/unionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		} else {
+			$format = str_replace('%intersectionicon%','',$format);
+			$format = str_replace('%unionicon%','',$format);
+		}
 
 		if ($post->ID) {
 			$format = str_replace('%postid%', $post->ID, $format);
@@ -798,11 +813,20 @@ SQL;
 		}
 
 		switch($formattype) {
+			case "iconlist":
+				return array ("default"=>"%taglink% %icons% ", "none"=>__("No Tags", $lzndomain) );
+
 			case "htmllist":
 				return array ("default"=>"<li>%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
 
+			case "htmllisticons":
+				return array ("default"=>"<li>%icons%%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
+
 			case "commalist":
 				return array ("default"=>"%taglink%, ", "last"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
+
+			case "commalisticons":
+				return array ("default"=>"%taglink% %icons%,", "last"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
 
 			case "technoraticommalist":
 				return array ("default"=>"%technoratitag%, ", "last"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
@@ -835,7 +859,6 @@ SQL;
 					return $default;
 				}
 
-
 			case "linkset":
 			case "linksetrel":
 				$newFormat = "superajaxitem";
@@ -843,7 +866,7 @@ SQL;
 				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&#160;";
 
 			case "weightedlinearbar":
-				return array("post"=>"<br clear=\"all\" />", "default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay%\"><div style=\"background-color:%tagrelweightcolor%; width:%tagweightint%%; float:left\">&#160;</div></a>");
+				return array("default"=>"<td width=\"%tagweightint%%\" style=\"background-color:%tagrelweightcolor%; border-right:1px solid black;\"><a href=\"%tagurl%\" title=\"%tagdisplay%\" style=\"color:%tagrelweightcolor%;\"><div width=\"100%\">&#160;</div></a></td>", "pre"=>"<table cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid black; border-right:0px\" width=\"100%\"><tr>", "post"=>"</tr></table>");
 
 			case "weightedlongtail":
 				// Thanks http://www.cssirc.com/codes/?code=23!
