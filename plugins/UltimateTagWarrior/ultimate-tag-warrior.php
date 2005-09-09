@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: UTW2:  Like UTW1,  but with even greater justice.  Allows tagging posts in a non-external-system dependent way;  with a righteous data structure for advanced tagging-mayhem.
-Version: 2.7.6
+Version: 2.7.7
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -93,4 +93,14 @@ function UTW_HasTags() {
 	return (bool)$utw->GetPostHasTags($post->ID);
 }
 
+/* if $format is passed in,  then the tags will replace the contents of the div named "tags-{tagid}" with a new tag list using the named format.  Otherwise, it'll just add the tag. */
+function UTW_AddTagToCurrentPost($format="") {
+	global $post;
+	$postid = $post->ID;
+	if ($format=="") {
+	?><input type="text" size="9" id="soloAddTag-<?= $postid ?>" /> <input type="button" value="+" onClick="sndReqNoResp('add', document.getElementById('soloAddTag-<?= $postid ?>').value, '<?= $postid ?>')" /><?
+	} else {
+	?><input type="text" size="9" id="soloAddTag-<?= $postid ?>" /> <input type="button" value="+" onClick="sndReq('add', document.getElementById('soloAddTag-<?= $postid ?>').value, '<?= $postid ?>', '<?= format ?>')" /><?
+	}
+}
 ?>
