@@ -18,6 +18,11 @@ function sndReq(action, tag, post, format) {
     http.send(null);
 }
 
+function sndReqNoResp(action, tag, post) {
+    http.open('get', '<?= $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post);
+    http.send(null);
+}
+
 function handleResponse() {
     if(http.readyState == 4){
         var response = http.responseText;
