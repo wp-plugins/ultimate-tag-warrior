@@ -75,7 +75,7 @@ function ultimate_better_admin() {
 		if ($_GET["updateaction"] == "Rename") {
 			$tag = $_GET["renametagvalue"];
 
-			$tagset = explode(" ", $tag);
+			$tagset = explode(",", $tag);
 
 			$q = "SELECT post_id FROM $tablepost2tag WHERE tag_id = $tagid";
 			$postids = $wpdb->get_results($q);
@@ -83,6 +83,7 @@ function ultimate_better_admin() {
 			$tagids = array();
 
 			foreach ($tagset as $tag) {
+				$tag = trim($tag);
 				$q = "SELECT tag_id FROM $tabletags WHERE tag = '$tag'";
 				$thistagid = $wpdb->get_var($q);
 
@@ -121,6 +122,15 @@ function ultimate_better_admin() {
 			echo "<div class=\"updated\"><p>Tags have been updated.</p></div>";
 		}
 
+		if ($_GET["updateaction"] == __("Save Synonyms", $lzndomain)) {
+			$synonyms = $_GET["synonyms"];
+			$synonyms = explode(',', $synonyms);
+			$utw->ClearSynonymsForTag($_GET["synonymtag"]);
+			foreach($synonyms as $synonym) {
+				$utw->AddSynonymForTag("", $_GET["synonymtag"], $synonym);
+			}
+		}
+
 		if ($_GET["updateaction"] ==__("Delete Tag", $lzndomain)) {
 			$q = "delete from $tablepost2tag where tag_id = $tagid";
 			$wpdb->query($q);
@@ -131,8 +141,12 @@ function ultimate_better_admin() {
 			echo "<div class=\"updated\"><p>Tag has been deleted.</p></div>";
 		}
 		if ($_GET["updateaction"] == __("Force Reinstall", $lzndomain)) {
-			$utw->ForceInstall();
-			echo "<div class=\"updated\"><p>Reinstall has Completed</p></div>";
+			$message = $utw->ForceInstall();
+			if ($message) {
+				echo "<div class=\"updated\"><p>$message</p></div>";
+			} else {
+				echo "<div class=\"updated\"><p>Reinstall has Completed</p></div>";
+			}
 		}
 		if ($_GET["updateaction"] == __("Tidy Tags", $lzndomain)) {
 			$utw->TidyTags();
@@ -212,48 +226,69 @@ CONFIGFOOTER;
 
 
 	echo '<fieldset class="options"><legend>' . __("Edit Tags", $lzndomain) .'</legend>';
+	echo '<p>' . __("Enter a comma separated list of tags", $lzndomain) . '</p>';
 OPTIONS;
-		$tags = $utw->GetPopularTags(-1, 'asc', 'tag');
-		if ($tags) {
-			echo "<form action=\"$siteurl/wp-admin/edit.php\">";
-			echo "<select name=\"edittag\">";
-			foreach($tags as $tag) {
-				echo "<option value=\"$tag->tag_id\">$tag->tag</option>";
-			}
-
-			echo '</select> <input type="text" name="renametagvalue"> <input type="submit" name="updateaction" value="' . __("Rename", $lzndomain) . '"> <input type="submit" name="updateaction" value="' . __("Delete Tag", $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __("Are you sure you want to delete this tag?", $lzndomain) . '\'))">';
-			echo '<input type="hidden" name="action" value="savetagupdate">';
-			echo '<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">';
-			echo '</form>';
-		} else {
-			echo '<p>' . __('No tags are in use at the moment.', $lzndomain) . '</p>';
-		}
-		echo "</fieldset>";
-
+	$tags = $utw->GetPopularTags(-1, 'asc', 'tag');
+	if ($tags) {
 		echo "<form action=\"$siteurl/wp-admin/edit.php\">";
+		echo "<select name=\"edittag\">";
+		foreach($tags as $tag) {
+			echo "<option value=\"$tag->tag_id\">$tag->tag</option>";
+		}
 
-		echo '<fieldset class="options"><legend>' . __('Force Reinstall', $lzndomain) . '</legend>';
-		_e('<p>Force Reinstall will run the installer.  This <em>will not</em> delete the tag tables.</p>');
-		echo '<input type="submit" name="updateaction" value="' . __('Force Reinstall', $lzndomain) . '"></fieldset>';
-
-		echo '<fieldset class="options"><legend>' . __('Tidy Tags', $lzndomain) . '</legend>';
-		_e('<p>Tidy Tags is a scary, scary thing.  <em>Make sure you back up your database before clicking the button.</em></p><p>Tidy Tags will delete any tag&lt;-&gt;post associations which have either a deleted tag or deleted post;  delete any tags not associated with a post;  and merge tags with the same name into single tags.</p>');
-		echo '<input type="submit" name="updateaction" value="' . __('Tidy Tags', $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __("Are you sure you want to purge tags?", $lzndomain) . '\'))"></fieldset>';
-
-		echo '<fieldset class="options"><legend>' . __('Convert Categories to Tags', $lzndomain) . '</legend>';
-		_e('<p>Again.. very scary.. back up your database first!</p>');
-		echo '<input type="submit" name="updateaction" onClick="javascript:return(confirm(\'' . __('Are you sure you want to convert categories to tags?', $lzndomain) . '\'))" value="' . __('Convert Categories to Tags', $lzndomain) . '"></fieldset>';
-
-		echo '<fieldset class="options"><legend>' . __('Custom Fields', $lzndomain) . '</legend>';
-		_e('<p>This pair of actions allow the moving of tag information from custom fields into the tag structure,  and moving the tag structure into a custom field.</p><p>When moving information from the custom field to the tag structure,  the existing tags are retained.  However, copying the tags to the custom field <strong>will overwrite the existing values</strong>.  To retain the existing values,  do an import before the export.</p><p><strong>This stuff seems to work,  but backup your database before trying,  just in case.</strong></p>', $lzndomain);
-		echo '<table><tr><td>' . __("Custom field name", $lzndomain) . '</td><td><input type="text" name="fieldName" value="' . $fieldName . '" /></td></tr>';
-		echo '<tr><td>' . __("Tag delimiter", $lzndomain) . '</td><td><input type="text" name="delimiter" value="' . $delimiter . '" /></td></tr></table>';
-		echo '<input type="submit" name="updateaction" value="' . __("Import from Custom Field", $lzndomain) . '" />';
-		echo '<input type="submit" name="updateaction" value="' . __("Export to Custom Field", $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __('Beware:  This will overwrite any data in the custom field.  Continue?', $lzndomain) . '\'))"/></fieldset>';
-
+		echo '</select> <input type="text" name="renametagvalue"> <input type="submit" name="updateaction" value="' . __("Rename", $lzndomain) . '"> <input type="submit" name="updateaction" value="' . __("Delete Tag", $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __("Are you sure you want to delete this tag?", $lzndomain) . '\'))">';
 		echo '<input type="hidden" name="action" value="savetagupdate">';
 		echo '<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">';
 		echo '</form>';
+	} else {
+		echo '<p>' . __('No tags are in use at the moment.', $lzndomain) . '</p>';
+	}
+	echo "</fieldset>";
+
+	echo '<fieldset class="options"><legend>' . __("Assign Synonyms", $lzndomain) .'</legend>';
+	echo '<p>' . __("Enter a comma separated list of synonyms. ", $lzndomain) . __("A synonym behaves in a similar manor to a tag - viewing the tag page for a synonym of a tag displays the tag page for the underlying tag.", $lzndomain) . '</p>';
+	$tags = $utw->GetPopularTags(-1, 'asc', 'tag');
+	if ($tags) {
+		echo "<form action=\"$siteurl/wp-admin/edit.php\">";
+		echo "<select name=\"synonymtag\" onChange=\"sndReqGenResp('editsynonyms', this.value, '', '')\">";
+		foreach($tags as $tag) {
+			echo "<option value=\"$tag->tag_id\">$tag->tag</option>";
+		}
+
+		echo '</select> <span id="ajaxResponse"></span> <input type="submit" name="updateaction" value="' . __("Save Synonyms", $lzndomain) . '">';
+		echo '<input type="hidden" name="action" value="savetagupdate">';
+		echo '<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">';
+		echo '</form>';
+	} else {
+		echo '<p>' . __('No tags are in use at the moment.', $lzndomain) . '</p>';
+	}
+	echo "</fieldset>";
+
+
+	echo "<form action=\"$siteurl/wp-admin/edit.php\">";
+
+	echo '<fieldset class="options"><legend>' . __('Force Reinstall', $lzndomain) . '</legend>';
+	_e('<p>Force Reinstall will run the installer.  This <em>will not</em> delete the tag tables.</p>');
+	echo '<input type="submit" name="updateaction" value="' . __('Force Reinstall', $lzndomain) . '"></fieldset>';
+
+	echo '<fieldset class="options"><legend>' . __('Tidy Tags', $lzndomain) . '</legend>';
+	_e('<p>Tidy Tags is a scary, scary thing.  <em>Make sure you back up your database before clicking the button.</em></p><p>Tidy Tags will delete any tag&lt;-&gt;post associations which have either a deleted tag or deleted post;  delete any tags not associated with a post;  and merge tags with the same name into single tags.</p>');
+	echo '<input type="submit" name="updateaction" value="' . __('Tidy Tags', $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __("Are you sure you want to purge tags?", $lzndomain) . '\'))"></fieldset>';
+
+	echo '<fieldset class="options"><legend>' . __('Convert Categories to Tags', $lzndomain) . '</legend>';
+	_e('<p>Again.. very scary.. back up your database first!</p>');
+	echo '<input type="submit" name="updateaction" onClick="javascript:return(confirm(\'' . __('Are you sure you want to convert categories to tags?', $lzndomain) . '\'))" value="' . __('Convert Categories to Tags', $lzndomain) . '"></fieldset>';
+
+	echo '<fieldset class="options"><legend>' . __('Custom Fields', $lzndomain) . '</legend>';
+	_e('<p>This pair of actions allow the moving of tag information from custom fields into the tag structure,  and moving the tag structure into a custom field.</p><p>When moving information from the custom field to the tag structure,  the existing tags are retained.  However, copying the tags to the custom field <strong>will overwrite the existing values</strong>.  To retain the existing values,  do an import before the export.</p><p><strong>This stuff seems to work,  but backup your database before trying,  just in case.</strong></p>', $lzndomain);
+	echo '<table><tr><td>' . __("Custom field name", $lzndomain) . '</td><td><input type="text" name="fieldName" value="' . $fieldName . '" /></td></tr>';
+	echo '<tr><td>' . __("Tag delimiter", $lzndomain) . '</td><td><input type="text" name="delimiter" value="' . $delimiter . '" /></td></tr></table>';
+	echo '<input type="submit" name="updateaction" value="' . __("Import from Custom Field", $lzndomain) . '" />';
+	echo '<input type="submit" name="updateaction" value="' . __("Export to Custom Field", $lzndomain) . '" OnClick="javascript:return(confirm(\'' . __('Beware:  This will overwrite any data in the custom field.  Continue?', $lzndomain) . '\'))"/></fieldset>';
+
+	echo '<input type="hidden" name="action" value="savetagupdate">';
+	echo '<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">';
+	echo '</form>';
 }
 
 function show_dropdown($settingName, $label, $value, $options) {
@@ -336,9 +371,7 @@ function ultimate_save_tags($postID)
 	global $wpdb, $tableposts, $table_prefix, $utw;
 
 	$tags = $wpdb->escape($_POST['tagset']);
-	$tags = explode(' ',$tags);
-	// remove duplicates
-	$tags = array_flip(array_flip($tags));
+	$tags = explode(',',$tags);
 
 	$utw->SaveTags($postID, $tags);
 
@@ -391,8 +424,10 @@ function ultimate_display_tag_widget() {
   }
 
 	echo '<fieldset id="tagsdiv">';
-	echo '<legend>Tags (Space seperated list. -\'s and _\'s display as spaces)</legend>';
-	echo "<input name=\"tagset\" type=\"text\" value=\"$taglist\" size=\"100\"><br />";
+	echo '<legend>Tags (Comma separated list; and -\'s and _\'s display as spaces)</legend>';
+	echo "<input name=\"tagset\" type=\"text\" value=\"";
+	$utw->ShowTagsForPost($post, array("first"=>'%tag%', 'default'=>', %tag%'));
+	echo "\" size=\"100\"><br />";
 
 	$widgetToUse = get_option('utw_always_show_links_on_edit_screen');
 
@@ -400,7 +435,7 @@ function ultimate_display_tag_widget() {
 		echo <<<JAVASCRIPT
 	<script language="javascript">
 	function addTag(tagname) {
-		document.forms[0].tagset.value += " " + tagname;
+		document.forms[0].tagset.value += ", " + tagname;
 	}
 	</script>
 JAVASCRIPT;
@@ -479,6 +514,7 @@ function ultimate_posts_join($join) {
 }
 
 function ultimate_posts_where($where) {
+	global $utw;
 	if ($_GET["tag"] != "") {
 		global $table_prefix, $wpdb;
 
@@ -486,17 +522,15 @@ function ultimate_posts_where($where) {
 		$tablepost2tag = $table_prefix . "post2tag";
 
 		$tags = $_GET["tag"];
-		$tagset = explode(" ", $tags);
-		$taglist = "'" . $tagset[0] . "'";
-		$tagcount = count($tagset);
-		if ($tagcount > 1) {
-			for ($i = 1; $i <= $tagcount; $i++) {
-				if ($tagset[$i] <> "") {
-					$taglist = $taglist . ", '" . $tagset[$i] . "'";
-				}
-			}
-		}
 
+		$tagset = explode(" ", $tags);
+		$tags = array();
+		foreach($tagset as $tag) {
+			$tags[] = "'" . $utw->GetCanonicalTag($tag) . "'";
+		}
+		$tags = array_unique($tags);
+
+		$taglist = implode (',',$tags);
 		$where .= " AND t.tag IN ($taglist) ";
 	}
 	return $where;

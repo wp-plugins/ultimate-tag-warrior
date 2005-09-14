@@ -23,6 +23,21 @@ function sndReqNoResp(action, tag, post) {
     http.send(null);
 }
 
+function sndReqGenResp(action, tag, post, format) {
+    http.open('get', '<?= $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
+    http.onreadystatechange = handleResponseGeneric;
+    http.send(null);
+}
+
+function handleResponseGeneric() {
+    if(http.readyState == 4){
+        var response = http.responseText;
+        var update = new Array();
+
+        document.getElementById("ajaxResponse").innerHTML = response;
+    }
+}
+
 function handleResponse() {
     if(http.readyState == 4){
         var response = http.responseText;

@@ -1,15 +1,17 @@
 <?php
 $tabletags = $table_prefix . "tags";
 $tablepost2tag = $table_prefix . "post2tag";
+$tabletag_synonyms = $table_prefix . "tag_synonyms";
+
 $lzndomain = "ultimate-tag-warrior";
-$current_build = 3;
+$current_build = 4;
 
 class UltimateTagWarriorCore {
 
 	/* Comparing x.y.z versions is more effort than I'm prepared
 	   to go to.  '*/
 	function CheckForInstall() {
-		global $current_build, $wpdb, $tabletags, $tablepost2tag;
+		global $current_build, $wpdb, $tabletags, $tablepost2tag, $tabletag_synonyms;
 
 		$installed_build = get_option('utw_installed_build');
 		if ($installed_build == '') $installed_build = 0;
@@ -65,6 +67,26 @@ SQL;
 			$wpdb->query($q);
 		}
 
+		if ($installed_build < 3) {
+
+		$q = <<<SQL
+		CREATE TABLE IF NOT EXISTS $tabletag_synonyms (
+		  tagsynonymid int(11) NOT NULL auto_increment,
+		  tag_id int(11) NOT NULL default '0',
+		  synonym varchar(150) NOT NULL default '',
+		  PRIMARY KEY  (`tagsynonymid`)
+) TYPE=MyISAM;
+SQL;
+
+			$wpdb->query($q);
+
+			$worked = $wpdb->get_var("SHOW TABLES LIKE '$tabletag_synonyms'");
+
+			if ($worked != $tabletag_synonyms) {
+				return "Wasn't able to create $tabletag_synonyms";
+			}
+		}
+
 		update_option('utw_installed_build', $current_build);
 	}
 
@@ -83,6 +105,9 @@ SQL;
 
 		foreach($tags as $tag) {
 			if ($tag <> "") {
+				$tag = trim($tag);
+				$tag = str_replace(' ', '_', $tag);
+
 				$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 				$tagid = $wpdb->get_var($q);
 
@@ -122,6 +147,8 @@ SQL;
 		global $tabletags, $tablepost2tag, $wpdb;
 
 		if ($tag <> "") {
+			$tag = trim($tag);
+			$tag = str_replace(' ', '_', $tag);
 
 			$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 			$tagid = $wpdb->get_var($q);
@@ -392,6 +419,79 @@ SQL;
 		return($wpdb->get_var($q) > 0);
 	}
 
+	function ClearSynonymsForTag($tagid="") {
+		global $tabletags, $tabletag_synonyms, $wpdb;
+
+		if ($tag) {
+			if (is_object($tag)) {
+				$tag = $tag->tag;
+			}
+			// XXX: Fix me when you need me.
+		} else {
+			return $wpdb->query("DELETE FROM $tabletag_synonyms WHERE tag_id = $tagid");
+		}
+	}
+
+	function GetSynonymsForTag($tag="", $tagid="") {
+		global $tabletags, $tabletag_synonyms, $wpdb;
+
+		if ($tag) {
+			if (is_object($tag)) {
+				$tag = $tag->tag;
+			}
+			return $wpdb->get_results("SELECT ts.synonym as tag, ts.tagsynonymid as tag_id FROM $tabletags t INNER JOIN $tabletag_synonyms ts ON t.tag_id = ts.tag_id WHERE t.tag = '$tag'");
+		} else {
+			return $wpdb->get_results("SELECT ts.synonym as tag, ts.tagsynonymid as tag_id FROM $tabletag_synonyms ts WHERE ts.tag_id = $tagid");
+		}
+	}
+
+	function ShowSynonymsForTag($tag, $format, $limit=0) {
+		echo $this->FormatTags($this->GetSynonymsForTag($tag), $format);
+	}
+
+	function AddSynonymForTag($tag='', $tagid='', $synonym) {
+		global $tabletags, $tabletag_synonyms, $wpdb;
+
+		$synonym = trim($synonym);
+
+		$q = "SELECT count(*) FROM $tabletags WHERE tag = '$synonym'";
+
+		if ($wpdb->get_var($q) == 0) {
+			if (!$tagid) {
+				$tagid = $wpdb->get_var("SELECT tag_id FROM $tabletags WHERE tag = '$tag'");
+			}
+
+			if ($tagid) {
+				$wpdb->query("INSERT INTO $tabletag_synonyms (tag_id, synonym) VALUES ($tagid, '$synonym')");
+			} else {
+				// Tag doesn't exist.
+			}
+		} else {
+			// Synonym already exists as a tag.
+		}
+	}
+
+
+
+	function GetCanonicalTag($tag) {
+		global $tabletags, $tabletag_synonyms, $wpdb;
+
+		$truetag = $wpdb->get_var("select tag from $tabletags where tag = '$tag'");
+
+		if ($truetag) {
+			return $truetag;
+		} else {
+			$synonym = $wpdb->get_var("select t.tag from $tabletags t INNER JOIN $tabletag_synonyms ts ON t.tag_id = ts.tag_id WHERE synonym = '$tag'");
+
+			return $synonym;
+		}
+		return "";
+	}
+
+
+
+
+
 
 
 
@@ -414,7 +514,7 @@ SQL;
 		$tagcount = count($tags);
 		if ($tagcount > 1) {
 			for ($i = 1; $i <= $tagcount; $i++) {
-				$taglist = $taglist . ", '" . $tags[$i]->tag . "'";
+				$taglist = $taglist . ", '" . urldecode($tags[$i]->tag) . "'";
 			}
 		}
 
@@ -473,7 +573,7 @@ SQL;
 		$tagcount = count($tags);
 		if ($tagcount > 1) {
 			for ($i = 1; $i <= $tagcount; $i++) {
-				$taglist = $taglist . ", '" . $tags[$i]->tag . "'";
+				$taglist = $taglist . ", '" . urldecode($tags[$i]->tag) . "'";
 			}
 		}
 
@@ -745,7 +845,7 @@ SQL;
 		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
-		if (count($tagset)>0) {
+		if (count($tagset)>1) {
 			$format = str_replace('%intersectionicon%', "<a href=\"$tagseturl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/intersectionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 			$format = str_replace('%unionicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/unionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		} else {
@@ -958,36 +1058,19 @@ CSS;
 Retrieves the posts for the tags specified in $_GET["tag"].  Gets the intersection when there are multiple tags.
 */
 function ultimate_get_posts() {
-	global $wpdb, $table_prefix, $posts, $table_prefix, $tableposts, $id, $wp_query, $request;
+	global $wpdb, $table_prefix, $posts, $table_prefix, $tableposts, $id, $wp_query, $request, $utw;
 	$tabletags = $table_prefix . 'tags';
 	$tablepost2tag = $table_prefix . "post2tag";
 
 	$tags = $_GET["tag"];
+
 	$tagset = explode(" ", $tags);
-	$taglist = "'" . $tagset[0] . "'";
-	$tagcount = count($tagset);
-	if ($tagcount > 1) {
-		for ($i = 1; $i <= $tagcount; $i++) {
-			if ($tagset[$i] <> "") {
-				$taglist = $taglist . ", '" . $tagset[$i] . "'";
-			}
-		}
+	$tags = array();
+	foreach($tagset as $tag) {
+		$tags[] = "'" . $utw->GetCanonicalTag($tag) . "'";
 	}
-
-	$now = current_time('mysql', 1);
-
-   $q = <<<SQL
-SELECT * from
-	$tabletags t, $tablepost2tag p2t, $tableposts p
-WHERE t.tag_id = p2t.tag_id
-  AND p.ID = p2t.post_id
-  AND t.tag IN ($taglist)
-  AND post_date_gmt < '$now'
-  AND post_status = 'publish'
-GROUP BY p.ID
-HAVING COUNT(p.id) = $tagcount
-ORDER BY post_date desc
-SQL;
+	$tags = array_unique($tags);
+	$tagcount = count($tags);
 
 	if (strpos($request, "HAVING COUNT(ID)") == false) {
 		$request = preg_replace("/GROUP BY $tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);

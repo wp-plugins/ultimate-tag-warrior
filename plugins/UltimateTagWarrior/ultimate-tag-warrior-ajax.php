@@ -93,6 +93,10 @@ switch($action) {
 		$utw->ShowRelatedTags($utw->GetTagsForTagString($tagstr), "<a href=\"javascript:addTag('%tag%')\">%tagdisplay%</a> ");
 
 		break;
+
+	case 'editsynonyms':
+
+		echo '<input type="text" name="synonyms" value="' . $utw->FormatTags($utw->GetSynonymsForTag("", $tag), array("first"=>"%tag%", "default"=>", %tag%")) . '" />';
 	}
 
 ?>
