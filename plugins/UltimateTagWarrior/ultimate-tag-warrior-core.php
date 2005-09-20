@@ -464,10 +464,10 @@ SQL;
 			if ($tagid) {
 				$wpdb->query("INSERT INTO $tabletag_synonyms (tag_id, synonym) VALUES ($tagid, '$synonym')");
 			} else {
-				// Tag doesn't exist.
+				return "Tag $tagid doesn't exist!";
 			}
 		} else {
-			// Synonym already exists as a tag.
+			return "$synonym already exists as a tag.";
 		}
 	}
 
@@ -796,9 +796,24 @@ SQL;
 		$siteurl = get_option('siteurl');
 
 		$prettyurls = get_option('utw_use_pretty_urls');
-
+		$tagset = array();
 		$tags = $_GET["tag"];
-		$tagset = explode(" ", $tags);
+
+		$type = "none";
+
+		if ($tags <> "") {
+			$tagset = explode(" ", $tags);
+			if (count($tagset) == 1) {
+				$tagset = explode("|", $tags);
+				if (count($tagset) <> 1) {
+					$type = "or";
+				} else {
+					$type = "single";
+				}
+			} else {
+				$type = "and";
+			}
+		}
 
 		if (get_option('utw_trailing_slash') == 'yes') { $trailing = "/"; }
 
@@ -810,11 +825,13 @@ SQL;
 			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name$trailing\" rel=\"tag\">$tag_display</a>", $format);
 			$rssurl = "$home$baseurl$tag_name/feed/rss2";
 			$tagseturl = "$home$baseurl" . implode('+', $tagset) . 	"+$tag_name$trailing";
+			$unionurl = "$home$baseurl" . implode('|', $tagset) . 	"|$tag_name$trailing";
 		} else {
 			$format = str_replace('%tagurl%', "$home/index.php?tag=$tag_name", $format);
 			$format = str_replace('%taglink%', "<a href=\"$home/index.php?tag=$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 			$rssurl = "$home/index.php?tag=$tag_name&feed=rss2";
 			$tagseturl = "$home/index.php?tag=" . implode('+', $tagset) . "+$tag_name";
+			$unionurl = "$home/index.php?tag=" . implode('|', $tagset) . "|$tag_name";
 		}
 
 		$format = str_replace('%tag%', $tag_name, $format);
@@ -837,7 +854,7 @@ SQL;
 		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%rsstag%', "<a href=\"$rssurl\" rel=\"tag\">RSS</a>", $format);
 
-		$format = str_replace('%icons%', '%technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%%intersectionicon%', $format);
+		$format = str_replace('%icons%', '%technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%%intersectionicon%%unionicon%', $format);
 
 		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
@@ -845,12 +862,23 @@ SQL;
 		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
-		if (count($tagset)>1) {
-			$format = str_replace('%intersectionicon%', "<a href=\"$tagseturl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/intersectionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-			$format = str_replace('%unionicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/unionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%intersectionurl%', $tagseturl, $format);
+		$format = str_replace('%unionurl%', $unionurl, $format);
+
+		if ($type == "and" || $type == "single") {
+			$format = str_replace('%intersectionicon%', "<a href=\"$tagseturl\"><img src=\"$siteurl/wp-content/plugins$install_directory/intersectionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+			$format = str_replace('%intersectionlink%', "<a href=\"$tagseturl\">+</a>", $format);
 		} else {
 			$format = str_replace('%intersectionicon%','',$format);
+			$format = str_replace('%intersectionlink%','',$format);
+		}
+
+		if ($type == "or" || $type == "single") {
+			$format = str_replace('%unionicon%', "<a href=\"$unionurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/unionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+			$format = str_replace('%unionlink%', "<a href=\"$unionurl\">|</a>", $format);
+		} else {
 			$format = str_replace('%unionicon%','',$format);
+			$format = str_replace('%unionlink%','',$format);
 		}
 
 		if ($post->ID) {
@@ -931,6 +959,9 @@ SQL;
 			case "technoraticommalist":
 				return array ("default"=>"%technoratitag%, ", "last"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
 
+			case "andcommalist":
+				return array ("default"=>"%taglink% %intersectionlink%, ", "last"=>"%taglink% %intersectionlink%", "none"=>__("No Tags", $lzndomain) );
+
 			case "superajax":
 			case "superajaxitem":
 			case "superajaxrelated":
@@ -963,7 +994,7 @@ SQL;
 			case "linksetrel":
 				$newFormat = "superajaxitem";
 				if ($formattype == "linksetrel") { $newFormat = "superajaxrelated"; }
-				return "%taglink% %technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&#160;";
+				return "%taglink% %icons%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&#160;";
 
 			case "weightedlinearbar":
 				return array("default"=>"<td width=\"%tagweightint%%\" style=\"background-color:%tagrelweightcolor%; border-right:1px solid black;\"><a href=\"%tagurl%\" title=\"%tagdisplay%\" style=\"color:%tagrelweightcolor%;\"><div width=\"100%\">&#160;</div></a></td>", "pre"=>"<table cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid black; border-right:0px\" width=\"100%\"><tr>", "post"=>"</tr></table>");
@@ -1062,17 +1093,26 @@ function ultimate_get_posts() {
 	$tabletags = $table_prefix . 'tags';
 	$tablepost2tag = $table_prefix . "post2tag";
 
+	$or_query = false;
+
 	$tags = $_GET["tag"];
 
 	$tagset = explode(" ", $tags);
+
+	if (count($tagset) == 1) {
+		$tagset = explode("|", $tags);
+		$or_query = true;
+	}
+
 	$tags = array();
 	foreach($tagset as $tag) {
 		$tags[] = "'" . $utw->GetCanonicalTag($tag) . "'";
 	}
+
 	$tags = array_unique($tags);
 	$tagcount = count($tags);
 
-	if (strpos($request, "HAVING COUNT(ID)") == false) {
+	if (strpos($request, "HAVING COUNT(ID)") == false && !$or_query) {
 		$request = preg_replace("/GROUP BY $tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);
 	}
 

@@ -126,9 +126,13 @@ function ultimate_better_admin() {
 			$synonyms = $_GET["synonyms"];
 			$synonyms = explode(',', $synonyms);
 			$utw->ClearSynonymsForTag($_GET["synonymtag"]);
+			$message = "";
 			foreach($synonyms as $synonym) {
-				$utw->AddSynonymForTag("", $_GET["synonymtag"], $synonym);
+				$message .= $utw->AddSynonymForTag("", $_GET["synonymtag"], $synonym);
+				$message .= $synonym . " ";
 			}
+
+			echo "<div class=\"updated\"><p>Added $message</p></div>";
 		}
 
 		if ($_GET["updateaction"] ==__("Delete Tag", $lzndomain)) {
@@ -426,7 +430,9 @@ function ultimate_display_tag_widget() {
 	echo '<fieldset id="tagsdiv">';
 	echo '<legend>Tags (Comma separated list; and -\'s and _\'s display as spaces)</legend>';
 	echo "<input name=\"tagset\" type=\"text\" value=\"";
+	if ($post) {
 	$utw->ShowTagsForPost($post, array("first"=>'%tag%', 'default'=>', %tag%'));
+	}
 	echo "\" size=\"100\"><br />";
 
 	$widgetToUse = get_option('utw_always_show_links_on_edit_screen');
@@ -470,10 +476,10 @@ function ultimate_the_content_filter($thecontent='') {
 	global $post, $utw, $lzndomain;
 
 	if (get_option('utw_include_local_links') == 'yes') {
-		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), "%taglink% ");
+		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), array("first"=>"<span class=\"localtags\">%taglink% ","default"=>"%taglink% ", "last"=>"%taglink%</span>"));
 	}
 	if (get_option('utw_include_technorati_links') == 'yes') {
-		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), array("first"=>__("Technorati Tags", $lzndomain) . ": %technoratitag% ", "default"=>"%technoratitag% ", "none"=>""));
+		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), array("first"=>__("<span class=\"technoratitags\">Technorati Tags", $lzndomain) . ": %technoratitag% ", "default"=>"%technoratitag% ", "last"=>"%technoratitag%</span>","none"=>""));
 	}
 	return $thecontent;
 }
@@ -524,6 +530,11 @@ function ultimate_posts_where($where) {
 		$tags = $_GET["tag"];
 
 		$tagset = explode(" ", $tags);
+
+		if (count($tagset) == 1) {
+			$tagset = explode("|", $tags);
+		}
+
 		$tags = array();
 		foreach($tagset as $tag) {
 			$tags[] = "'" . $utw->GetCanonicalTag($tag) . "'";
