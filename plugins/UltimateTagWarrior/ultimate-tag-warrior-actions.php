@@ -1,5 +1,5 @@
 <?php
-ini_set("include_path", ".");
+ini_set("include_path", ini_get('include_path') . PATH_SEPARATOR . ".");
 require_once('ultimate-tag-warrior-core.php');
 $utw = new UltimateTagWarriorCore();
 
@@ -439,11 +439,15 @@ function ultimate_display_tag_widget() {
 
 	if ($widgetToUse != 'none') {
 		echo <<<JAVASCRIPT
-	<script language="javascript">
-	function addTag(tagname) {
-		document.forms[0].tagset.value += ", " + tagname;
-	}
-	</script>
+       <script language="javascript">
+       function addTag(tagname) {
+         if (document.forms[0].tagset.value == "") {
+           document.forms[0].tagset.value = tagname;
+	   } else {
+                 document.forms[0].tagset.value += ", " + tagname;
+               }
+       }
+       </script>
 JAVASCRIPT;
 
 

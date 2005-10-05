@@ -1,5 +1,5 @@
 <?php
-ini_set("include_path", ".");
+ini_set("include_path", ini_get('include_path') . PATH_SEPARATOR . ".");
 
 require('../../../wp-blog-header.php');
 include_once('ultimate-tag-warrior-core.php');
@@ -26,7 +26,10 @@ switch($action) {
 	case 'add':
 		$utw->AddTag($post, $tag);
 		echo $post . "|";
-		$utw->ShowTagsForPost($post, $utw->GetFormatForType("superajax"));
+		if("" == $format) {
+			$format = "superajax";
+		}
+		$utw->ShowTagsForPost($post, $utw->GetFormatForType($format));
 		break;
 
 	case 'expand':

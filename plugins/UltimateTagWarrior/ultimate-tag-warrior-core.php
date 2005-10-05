@@ -63,8 +63,13 @@ SQL;
 		}
 
 		if ($installed_build < 2) {
-			$q = "ALTER TABLE $tabletags CHANGE id tag_id int(11) AUTO_INCREMENT";
-			$wpdb->query($q);
+			$alreadyChanged = $wpdb->get_var("SHOW COLUMNS FROM $tabletags LIKE 'tag_id'");
+			if ($alreadyChanged == 'tag_id') {
+				// do nothing! the column has already been changed; and trying to change it again makes an error.
+			} else {
+				$q = "ALTER TABLE $tabletags CHANGE id tag_id int(11) AUTO_INCREMENT";
+				$wpdb->query($q);
+			}
 		}
 
 		if ($installed_build < 3) {
@@ -294,6 +299,11 @@ SQL;
 	function GetCurrentTagSet() {
 		$tags = $_GET["tag"];
 		$tagset = explode(" ", $tags);
+
+		if (count($tagset) == 1) {
+			$tagset = explode("|", $tags);
+		}
+
 		$taglist = "'" . $tagset[0] . "'";
 		$tagcount = count($tagset);
 		if ($tagcount > 1) {
@@ -808,7 +818,11 @@ SQL;
 				if (count($tagset) <> 1) {
 					$type = "or";
 				} else {
-					$type = "single";
+					if (strtolower($tagset[0]) == strtolower($tag->tag)) {
+						$type = "none";
+					} else {
+						$type = "single";
+					}
 				}
 			} else {
 				$type = "and";
@@ -856,11 +870,11 @@ SQL;
 
 		$format = str_replace('%icons%', '%technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%%intersectionicon%%unionicon%', $format);
 
-		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%rssicon%', "<a href=\"$rssurl\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
 		$format = str_replace('%intersectionurl%', $tagseturl, $format);
 		$format = str_replace('%unionurl%', $unionurl, $format);
@@ -874,12 +888,26 @@ SQL;
 		}
 
 		if ($type == "or" || $type == "single") {
-			$format = str_replace('%unionicon%', "<a href=\"$unionurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/unionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+			$format = str_replace('%unionicon%', "<a href=\"$unionurl\"><img src=\"$siteurl/wp-content/plugins$install_directory/unionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 			$format = str_replace('%unionlink%', "<a href=\"$unionurl\">|</a>", $format);
+
 		} else {
 			$format = str_replace('%unionicon%','',$format);
 			$format = str_replace('%unionlink%','',$format);
 		}
+
+		if ($type == "or") {
+			$format = str_replace('%operatortext%', 'or',$format);
+			$format = str_replace('%operatorsymbol%', '|',$format);
+		} else if ($type == "and") {
+			$format = str_replace('%operatortext%', 'and',$format);
+			$format = str_replace('%operatorsymbol%', '+',$format);
+		} else {
+			$format = str_replace('%operatortext%', '',$format);
+			$format = str_replace('%operatorsymbol%', '',$format);
+		}
+
+
 
 		if ($post->ID) {
 			$format = str_replace('%postid%', $post->ID, $format);
@@ -927,6 +955,7 @@ SQL;
 
 		$format = str_replace('%title%', $post->post_title, $format);
 		$format = str_replace('%postlink%', "<a href=\"$url\">$post->post_title</a>", $format);
+		$format = str_replace('%excerpt%', $post->post_excerpt, $format);
 
 		return $format;
 	}
@@ -941,6 +970,15 @@ SQL;
 		}
 
 		switch($formattype) {
+			case "tagsetsimplelist":
+				return array('first'=>'%taglink%', 'default'=>' %operatortext% %taglink%');
+
+			case "tagsetcommalist":
+				return array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>' %operatortext% %taglink%');
+
+			case "simplelist":
+				return array ("default"=>"%taglink% ", "none"=>__("No Tags", $lzndomain) );
+
 			case "iconlist":
 				return array ("default"=>"%taglink% %icons% ", "none"=>__("No Tags", $lzndomain) );
 
@@ -951,16 +989,16 @@ SQL;
 				return array ("default"=>"<li>%icons%%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
 
 			case "commalist":
-				return array ("default"=>"%taglink%, ", "last"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
+				return array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
 
 			case "commalisticons":
-				return array ("default"=>"%taglink% %icons%,", "last"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
+				return array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
 
 			case "technoraticommalist":
-				return array ("default"=>"%technoratitag%, ", "last"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
+				return array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
 
 			case "andcommalist":
-				return array ("default"=>"%taglink% %intersectionlink%, ", "last"=>"%taglink% %intersectionlink%", "none"=>__("No Tags", $lzndomain) );
+				return array ("default"=>", %taglink% %intersectionlink%%unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
 
 			case "superajax":
 			case "superajaxitem":
@@ -1004,6 +1042,7 @@ SQL;
 				$css = <<<CSS
 				<style type="text/css">
 				.longtail, .longtail li { list-style: none; margin: 0; padding: 0; }
+				.longtail li a {text-decoration:none;}
 				.longtail {position: relative; height: 100px;}
 				.longtail:after { display: block; visibility: hidden; content: "."; height: 0; overflow: hidden; clear: both;}
 				.longtail li {float: left; position: relative; height: 100%;width: 5px;margin:0px;background-color:#fff;}
@@ -1026,8 +1065,11 @@ CSS;
 			case "coloredsizedtagcloudwithcount":
 				return array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
 
+			case "postsimplelist":
+				return array ("default"=>"%postlink%");
+
 			case "postcommalist":
-				return array ("default"=>"%postlink%, ", "last"=>"%postlink%", "none"=> __("No Related Posts", $lzndomain));
+				return array ("default"=>", %postlink%", "first"=>"%postlink%", "none"=> __("No Related Posts", $lzndomain));
 
 			case "posthtmllist":
 				return array ("default"=>"<li>%postlink%</li>", "none"=>"<li>" . __("No Related Posts", $lzndomain) . "</li>");
@@ -1117,6 +1159,8 @@ function ultimate_get_posts() {
 	}
 
 	$posts = $wpdb->get_results($request);
+	// As requested by Splee and copperleaf
+	$wp_query->is_home=false;
 	// Thanks Mark! http://txfx.net/
 	$posts = apply_filters('the_posts', $posts);
 	$wp_query->posts = $posts;
