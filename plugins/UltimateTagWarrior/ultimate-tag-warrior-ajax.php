@@ -4,8 +4,8 @@ ini_set("include_path", ini_get('include_path') . PATH_SEPARATOR . ".");
 require('../../../wp-blog-header.php');
 include_once('ultimate-tag-warrior-core.php');
 
-$keywordAPISite = "api.search.yahoo.com";
-$keywordAPIUrl = "/ContentAnalysisService/V1/termExtraction";
+$keywordAPISite = "tagyu.com";
+$keywordAPIUrl = "/api/suggest/";
 
 $appID = "wp-UltimateTagWarrior";
 
@@ -57,41 +57,54 @@ switch($action) {
 		$sock = fsockopen($keywordAPISite, 80, $errno, $errstr, 30);
 		if (!$sock) die("$errstr ($errno)\n");
 
-		$data = "appid=" . $appID . "&context=" . $HTTP_RAW_POST_DATA;
+		$data = $HTTP_RAW_POST_DATA;
 
-		fputs($sock, "POST $keywordAPIUrl HTTP/1.0\r\n");
-		fputs($sock, "Host: $keywordAPISite\r\n");
-		fputs($sock, "Content-type: application/x-www-form-urlencoded\r\n");
-		fputs($sock, "Content-length: " . strlen($data) . "\r\n");
-		fputs($sock, "Accept: */*\r\n");
-		fputs($sock, "\r\n");
-		fputs($sock, "$data\r\n");
-		fputs($sock, "\r\n");
+		$xml = "";
+		if ($bypost) {
 
-		$headers = "";
-		while ($str = trim(fgets($sock, 4096)))
-		  $headers .= "$str\n";
+			fputs($sock, "POST $keywordAPIUrl HTTP/1.0\r\n");
+			fputs($sock, "Host: $keywordAPISite\r\n");
+			fputs($sock, "Content-type: application/x-www-form-urlencoded\r\n");
+			fputs($sock, "Content-length: " . strlen($data) . "\r\n");
+			fputs($sock, "Accept: */*\r\n");
+			fputs($sock, "\r\n");
+			fputs($sock, "$data\r\n");
+			fputs($sock, "\r\n");
 
-		print "\n";
+			$headers = "";
+			while ($str = trim(fgets($sock, 4096)))
+			  $headers .= "$str\n";
 
-		$body = "";
-		while (!feof($sock))
-		  $body .= fgets($sock, 4096);
+			print "\n";
 
-		fclose($sock);
+			while (!feof($sock))
+			  $xml .= fgets($sock, 4096);
 
-		$loc = strpos($body, "<Result>", 0);
-		while($loc < strlen($body) && $loc != false) {
-			$loc += 8; // start of the tag
-			$end = strpos($body, "</Result>", $loc);
+			fclose($sock);
+		} else {
+			$tagyu_url = 'http://' . $keywordAPISite . $keywordAPIUrl . $data;
 
-			echo "<a href=\"javascript:addTag('" . str_replace(' ','_',substr($body, $loc, $end-$loc)) . "')\">" . substr($body, $loc, $end-$loc) . "</a> ";
-			$tagstr .= "'" . str_replace(' ','_',substr($body, $loc, $end-$loc)) . "',";
-
-			$loc = strpos($body, "<Result>", $end);
+			$xml = file_get_contents($tagyu_url);
 		}
 
-		$tagstr .= "''";
+		if (strpos($xml,'<error>') === FALSE) {
+			$loc = strpos($xml, "<tag>", 0);
+			while($loc < strlen($xml) && $loc != false) {
+				$loc += 5; // start of the tag
+				$end = strpos($xml, "</tag>", $loc);
+
+				echo "<a href=\"javascript:addTag('" . str_replace(' ','_',substr($xml, $loc, $end-$loc)) . "')\">" . substr($xml, $loc, $end-$loc) . "</a> ";
+				$tagstr .= "'" . str_replace(' ','_',substr($xml, $loc, $end-$loc)) . "',";
+
+				$loc = strpos($xml, "<tag>", $end);
+			}
+
+			// eat the trailing comma.
+			$tagstr = substr($tagstr,0,-1);
+
+		} else {
+			echo $xml;
+		}
 
 		$utw->ShowRelatedTags($utw->GetTagsForTagString($tagstr), "<a href=\"javascript:addTag('%tag%')\">%tagdisplay%</a> ");
 

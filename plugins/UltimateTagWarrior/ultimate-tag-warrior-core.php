@@ -4,7 +4,7 @@ $tablepost2tag = $table_prefix . "post2tag";
 $tabletag_synonyms = $table_prefix . "tag_synonyms";
 
 $lzndomain = "ultimate-tag-warrior";
-$current_build = 4;
+$current_build = 5;
 
 class UltimateTagWarriorCore {
 
@@ -92,6 +92,22 @@ SQL;
 			}
 		}
 
+		if ($installed_build < 4) {
+			$alreadyChanged = $wpdb->get_var("SHOW COLUMNS FROM $tabletags LIKE 'ip_address'");
+			if ($alreadyChanged == 'tag_id') {
+				// do nothing! the column has already been changed; and trying to change it again makes an error.
+			} else {
+				$q = "ALTER TABLE $tablepost2tag ADD ip_address varchar(15)";
+				$wpdb->query($q);
+
+				$changed = $wpdb->get_var("SHOW COLUMNS FROM $tablepost2tag LIKE 'ip_address'");
+
+				if ($changed != 'ip_address') {
+					return "Couldn't add ip_address column to $tablepost2tag";
+				}
+			}
+		}
+
 		update_option('utw_installed_build', $current_build);
 	}
 
@@ -104,7 +120,7 @@ SQL;
 	/* The post corresponding to the postID are updated to be the tags in the list.  Previously assigned
 		tags not in the list are deleted. */
 	function SaveTags($postID, $tags) {
-		global $tabletags, $tablepost2tag, $wpdb;
+		global $tabletags, $tablepost2tag, $wpdb, $current_build, $REMOTE_ADDR;
 
 		$tags = array_flip(array_flip($tags));
 
@@ -125,7 +141,8 @@ SQL;
 				$q = "SELECT rel_id FROM $tablepost2tag WHERE post_id = '$postID' AND tag_id = '$tagid'";
 
 				if ( is_null($wpdb->get_var($q))) {
-					$q = "INSERT INTO $tablepost2tag (post_id, tag_id) VALUES ('$postID','$tagid')";
+					$q = "INSERT INTO $tablepost2tag (post_id, tag_id, ip_address) VALUES ('$postID','$tagid', '" . $REMOTE_ADDR . "')";
+
 					$wpdb->query($q);
 				}
 
@@ -154,6 +171,8 @@ SQL;
 		if ($tag <> "") {
 			$tag = trim($tag);
 			$tag = str_replace(' ', '_', $tag);
+
+			$tag = $this->GetCanonicalTag($tag);
 
 			$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 			$tagid = $wpdb->get_var($q);
@@ -292,8 +311,12 @@ SQL;
 
 	function GetTagsForTagString($tags) {
 		global $wpdb, $tabletags;
-		$q = "SELECT * FROM $tabletags WHERE tag IN ($tags)";
-		return $wpdb->get_results($q);
+
+		if ($tags) {
+			$q = "SELECT * FROM $tabletags WHERE tag IN ($tags)";
+
+			return $wpdb->get_results($q);
+		}
 	}
 
 	function GetCurrentTagSet() {
@@ -304,16 +327,18 @@ SQL;
 			$tagset = explode("|", $tags);
 		}
 
-		$taglist = "'" . $tagset[0] . "'";
 		$tagcount = count($tagset);
-		if ($tagcount > 1) {
-			for ($i = 1; $i <= $tagcount; $i++) {
-				if ($tagset[$i] <> "") {
-					$taglist = $taglist . ", '" . $tagset[$i] . "'";
+		$taglist = array();
+
+		if ($tagcount > 0) {
+			for ($i = 0; $i < $tagcount; $i++) {
+				if (trim($tagset[$i]) <> "") {
+					$taglist[] = "'" . trim($tagset[$i]) . "'";
 				}
 			}
 		}
-		return ($this->GetTagsForTagString($taglist));
+
+		return ($this->GetTagsForTagString( implode(',',$taglist)));
 	}
 
 	function TidyTags() {
@@ -706,7 +731,24 @@ SQL;
 		if ($limit != 0) {
 			$results = array_slice($results, 0, $limit);
 		}
-		return $results;
+
+		$distinctweights = array();
+		foreach($results as $result) {
+			$weight = $result->relativeweight;
+			if (!array_key_exists($weight, $distinctweights)) {
+				$distinctweights[$weight] = $weight;
+			}
+		}
+
+		sort($distinctweights, SORT_NUMERIC);
+
+		$finalresults = array();
+		foreach($results as $result) {
+			$result->weightrank =  ((array_search($result->relativeweight, $distinctweights) + 1) / (count($distinctweights))) * 100;
+			$finalresults[] = $result;
+		}
+
+		return $finalresults;
 	}
 
 	function SortWeightedTagsAlphaAsc($x, $y) {
@@ -862,6 +904,11 @@ SQL;
 		$format = str_replace("%tagrelweightcolor%", $this->GetColorForWeight($tag->relativeweight), $format);
 		$format = str_replace("%tagrelweightfontsize%", $this->GetFontSizeForWeight($tag->relativeweight), $format);
 
+		$format = str_replace('%tagrelweightrank%', $tag->weightrank, $format);
+		$format = str_replace('%tagrelweightrankint%', ceil($tag->weightrank), $format);
+		$format = str_replace("%tagrelweightrankcolor%", $this->GetColorForWeight($tag->weightrank), $format);
+		$format = str_replace("%tagrelweightrankfontsize%", $this->GetFontSizeForWeight($tag->weightrank), $format);
+
 		$format = str_replace('%technoratitag%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%delicioustag%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
@@ -988,6 +1035,9 @@ SQL;
 			case "htmllisticons":
 				return array ("default"=>"<li>%icons%%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
 
+			case "htmllistandor":
+				return array ("default"=>"<li>%taglink% %intersectionlink% %unionlink%</li>","none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
+
 			case "commalist":
 				return array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
 
@@ -998,7 +1048,7 @@ SQL;
 				return array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
 
 			case "andcommalist":
-				return array ("default"=>", %taglink% %intersectionlink%%unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
+				return array ("default"=>", %taglink% %intersectionlink% %unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
 
 			case "superajax":
 			case "superajaxitem":
@@ -1051,19 +1101,22 @@ SQL;
 CSS;
 				return array("pre"=>"$css<ol class=\"longtail\">", "default"=>"<li><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div style=\"height:%tagrelweightint%%\">&#160;</div></a></li>", "post"=>"</ol>");
 
+			case "weightedlongtailvertical":
+				return array("pre"=>"<div class=\"longtailvert\">", "default"=>'<div style="background-color:%tagrelweightrankcolor%; width:%tagrelweightint%%; \"><a href="%tagurl%" title="%tagdisplay% (%tagcount%)" style="display:block; ">%tagdisplay%</a></div>', "post"=>"</div>");
+
 			case "coloredtagcloud":
-				return array("default"=>"<a href=\"%tagurl%\" style=\"color:%tagrelweightcolor%\">%tagdisplay%</a> ");
+				return array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
 
 			case "sizedtagcloud":
-				return array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%\">%tagdisplay%</a> ");
+				return array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%\">%tagdisplay%</a> ");
 
 			case "coloredsizedtagcloud":
 			case "sizedcoloredtagcloud":
-				return array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightcolor%\">%tagdisplay%</a> ");
+				return array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
 
 			// Thanks drac! http://lair.fierydragon.org/
 			case "coloredsizedtagcloudwithcount":
-				return array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
+				return array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
 
 			case "postsimplelist":
 				return array ("default"=>"%postlink%");

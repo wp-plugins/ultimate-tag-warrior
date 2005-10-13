@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Ultimate Tag Warrior 2.8.1:  Help:  Custom Formatting</title>
+<title>Ultimate Tag Warrior 2.8.3:  Help:  Custom Formatting</title>
 <style type="text/css">
 body, td {font-family:Verdana; font-size:0.8em; line-height:2em;}
 dt {font-weight:bolder; }
@@ -107,6 +107,12 @@ table, td {border:1px solid #AAA}
 <tr><td>%tagrelweightint%</td><td>The relative tag weight, rounded up to the nearest integer</td><td>24</td></tr>
 <tr><td>%tagrelweightcolor%</td><td>The colour that corresponds to the tag weight</td><td>#111111</td></tr>
 <tr><td>%tagrelweightfontsize%</td><td>The font size that corresponds to the tag weight</td><td>114%</td></tr>
+
+<tr><td>%tagrelweightrank%</td><td>The tag rank of a tag.  If there are tags used 10 times, 8 times, 2 times and once;  the tag rank of 10x is 100,  8x is 75, 2x is 50 and 1x is 25.  This is useful for evening out spikes at the popular end of the scale.</td><td>23.5</td></tr>
+<tr><td>%tagrelweightintrank%</td><td>The tag rank, rounded up to the nearest integer</td><td>24</td></tr>
+<tr><td>%tagrelweightcolorrank%</td><td>The colour that corresponds to the tag rank</td><td>#111111</td></tr>
+<tr><td>%tagrelweightfontsizerank%</td><td>The font size that corresponds to the tag rank</td><td>114%</td></tr>
+
 <tr><td>%intersectionurl%</td><td>If viewing either a tag page, or the intersection of two or more tags,  this is the URL of the page to see the intersection of the current tags,  and the tag being displayed.</td><td>http://www.site.com/tags/Monkey+Fishsticks+Foo_Bar</td></tr>
 <tr><td>%unionurl%</td><td>If viewing either a tag page, or the union of two or more tags,  this is the URL of the page to see the union of the current tags,  and the tag being displayed.</td><td>http://www.site.com/tags/Monkey|Fishsticks|Foo_Bar</td></tr>
 <tr><td>%intersectionicon%</td><td>Link to the intersection url,  with the intersection icon.</td><td><a href="http://www.site.com/tags/Monkey+Fishsticks+Foo_Bar"><img src="./intersectionicon.jpg" border="0" hspace="1"></a></td></tr>

@@ -437,7 +437,6 @@ function ultimate_display_tag_widget() {
 
 	$widgetToUse = get_option('utw_always_show_links_on_edit_screen');
 
-	if ($widgetToUse != 'none') {
 		echo <<<JAVASCRIPT
        <script language="javascript">
        function addTag(tagname) {
@@ -451,6 +450,7 @@ function ultimate_display_tag_widget() {
 JAVASCRIPT;
 
 
+	if ($widgetToUse != 'none') {
 		echo "Add existing tag: ";
 		if ($widgetToUse=='tag list') {
 
@@ -469,7 +469,7 @@ JAVASCRIPT;
   echo '</fieldset>';
 
   echo '<fieldset id="tagsuggestdiv">';
-  echo '<legend>Tag Suggestions [powered by Yahoo! Search.]</legend>';
+  echo '<legend>Tag Suggestions (Courtesy of <a href="http://tagyu.com">tagyu.com</a>)</legend>';
   echo '<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions"/>';
   echo '<div id="suggestedTags"></div>';
   echo '</fieldset>';

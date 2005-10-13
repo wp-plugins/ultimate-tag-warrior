@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: UTW2:  Like UTW1,  but with even greater justice.  Allows tagging posts in a non-external-system dependent way;  with a righteous data structure for advanced tagging-mayhem.
-Version: 2.8.2
+Version: 2.8.3
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -91,6 +91,12 @@ function UTW_HasTags() {
 	global $utw, $post;
 
 	return (bool)$utw->GetPostHasTags($post->ID);
+}
+
+function is_tag() {
+	global $utw;
+
+	return (count($utw->GetCurrentTagSet()) > 0);
 }
 
 /* if $format is passed in,  then the tags will replace the contents of the div named "tags-{tagid}" with a new tag list using the named format.  Otherwise, it'll just add the tag. */
