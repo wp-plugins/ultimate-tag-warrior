@@ -92,7 +92,7 @@ SQL;
 			}
 		}
 
-		if ($installed_build < 4) {
+		if ($installed_build < 5) {
 			$alreadyChanged = $wpdb->get_var("SHOW COLUMNS FROM $tabletags LIKE 'ip_address'");
 			if ($alreadyChanged == 'tag_id') {
 				// do nothing! the column has already been changed; and trying to change it again makes an error.
