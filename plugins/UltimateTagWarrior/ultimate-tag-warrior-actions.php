@@ -14,6 +14,8 @@ class UltimateTagWarriorActions {
 		// Add a new menu under Manage:
 		add_management_page('Tag Management', 'Tags', 8, basename(__FILE__), array('UltimateTagWarriorActions', 'ultimate_better_admin'));
 
+		// And one under options
+		add_options_page('Tag Options', 'Tags', 8, basename(__FILE__), array('UltimateTagWarriorActions', 'utw_options'));
 	}
 
 /* ultimate_rewrite_rules
@@ -34,7 +36,7 @@ function &ultimate_rewrite_rules(&$rules) {
 	return $rules;
 }
 
-function ultimate_better_admin() {
+function utw_options() {
 	global $lzndomain, $utw, $wpdb, $tableposts, $tabletags, $tablepost2tag, $install_directory;
 
 	$siteurl = get_option('siteurl');
@@ -43,33 +45,105 @@ function ultimate_better_admin() {
 
 	$configValues = array();
 
+	$configValues[] = array("setting"=>"", "label"=>__("URL settings", $lzndomain),  "type"=>"label");
+	$configValues[] = array("setting"=>"utw_use_pretty_urls", "label"=>__("Use url rewriting for local tag urls (/tag/tag instead of index.php?tag=tag)", $lzndomain),  "type"=>"boolean");
 	$configValues[] = array("setting"=>"utw_base_url", "label"=>__("Base url", $lzndomain),  "type"=>"string");
 	$configValues[] = array("setting"=>"utw_trailing_slash", 'label'=>__("Include trailing slash on tag urls", $lzndomain), 'type'=>'boolean');
 
-	$configValues[] = array("setting"=>"utw_include_local_links", "label"=>__("Automatically include local tag links", $lzndomain),  "type"=>"boolean");
+	$configValues[] = array("setting"=>"", "label"=>__("Debugging", $lzndomain),  "type"=>"label");
+	$configValues[] = array("setting"=>"utw_debug", 'label'=>__("Include debugging information", $lzndomain), 'type'=>'boolean');
 
-	$configValues[] = array("setting"=>"utw_include_technorati_links", "label"=>__("Automatically include Technorati tag links", $lzndomain),  "type"=>"boolean");
-	$configValues[] = array("setting"=>"utw_include_categories_as_tags", "label"=>__("Automatically add categories as tags", $lzndomain),  "type"=>"boolean");
-	$configValues[] = array("setting"=>"utw_use_pretty_urls", "label"=>__("Use url rewriting for local tag urls (/tag/tag instead of index.php?tag=tag)", $lzndomain),  "type"=>"boolean");
-	$configValues[] = array("setting"=>"utw_always_show_links_on_edit_screen", "label"=>__("Always display tag links on edit post page (instead of switching to a dropdown when there are many tags)", $lzndomain),  "type"=>"dropdown", "options"=>array('none', 'dropdown', 'tag list'));
+	$configValues[] = array("setting"=>"", "label"=>__("Automatic Tag Link Inclusion", $lzndomain),  "type"=>"label");
+	$configValues[] = array("setting"=>"utw_append_tag_links_to_feed", 'label'=>__("Include local tag links in feeds", $lzndomain), 'type'=>'boolean');
 
-	$configValues[] = array("setting"=>"", "label"=>__("Tag cloud colors", $lzndomain),  "type"=>"label");
+	$configValues[] = array("setting"=>"utw_include_local_links", "label"=>__("Automatically include primary tag links", $lzndomain),  "type"=>"boolean");
+	$configValues[] = array("setting"=>'utw_primary_automagically_included_link_format', 'label'=>__('Format for primary tag links'), 'type'=>'dropdown', 'options'=>$utw->GetPredefinedFormatNames());
+
+	$configValues[] = array("setting"=>"utw_include_technorati_links", "label"=>__("Automatically include secondary tag links", $lzndomain),  "type"=>"boolean");
+	$configValues[] = array("setting"=>'utw_secondary_automagically_included_link_format', 'label'=>__('Format for secondary tag links'), 'type'=>'dropdown', 'options'=>$utw->GetPredefinedFormatNames());
+
+
+	$configValues[] = array("setting"=>"", "label"=>__("Global Formatting Settings", $lzndomain),  "type"=>"label");
 
 	$configValues[] = array("setting"=>"utw_tag_cloud_max_color", "label"=>__("Most popular color", $lzndomain),  "type"=>"color");
 	$configValues[] = array("setting"=>"utw_tag_cloud_max_font", "label"=>__("Most popular size", $lzndomain),  "type"=>"color");
 	$configValues[] = array("setting"=>"utw_tag_cloud_min_color", "label"=>__("Least popular color", $lzndomain),  "type"=>"color");
 	$configValues[] = array("setting"=>"utw_tag_cloud_min_font", "label"=>__("Least popular size", $lzndomain),  "type"=>"color");
-
 	$configValues[] = array("setting"=>'utw_tag_cloud_font_units', 'label'=>__('Font size units', $lzndomain), "type"=>"dropdown", "options"=>array('%','pt','px','em'));
+
+	$configValues[] = array("setting"=>'utw_icons', 'label'=>__('Icons to display in icon formats', $lzndomain), "type"=>"multiselect", "options"=>array('Technorati','Flickr','delicious','Wikipedia','gadabe', 'Zniff', 'RSS'));
+
+	$configValues[] = array("setting"=>"", "label"=>__("Editing Options", $lzndomain),  "type"=>"label");
+
+	$configValues[] = array("setting"=>"utw_always_show_links_on_edit_screen", "label"=>__("Show existing tags on post editing page", $lzndomain),  "type"=>"dropdown", "options"=>array('none', 'dropdown', 'tag list'));
+	$configValues[] = array("setting"=>"utw_include_categories_as_tags", "label"=>__("Automatically add categories as tags", $lzndomain),  "type"=>"boolean");
+
+
 
 	if ($_GET["action"] == "saveconfiguration") {
 		foreach($configValues as $setting) {
-			if ($setting['type'] != 'label') {
+			if ($setting['type'] == 'multiselect') {
+				$options = '|';
+
+				foreach($setting['options'] as $option) {
+					$options .= $_GET[$setting['setting'] . ":" . $option] . '|';
+				}
+				update_option($setting['setting'], $options);
+			} else if ($setting['type'] != 'label') {
 				update_option($setting['setting'], $_GET[$setting['setting']]);
 			}
 		}
 		echo "<div class=\"updated\"><p>Updated settings</p></div>";
-	} else if ($_GET["action"] == "savetagupdate") {
+	}
+
+	echo "<fieldset class=\"options\"><legend>" . __("Help!", $lzndomain) . "</legend><a href=\"$siteurl/wp-content/plugins$install_directory/ultimate-tag-warrior-help.html\" target=\"_new\">" . __("Local help", $lzndomain) . "</a> | <a href=\"http://www.neato.co.nz/ultimate-tag-warrior\" target=\"_new\">" . __("Author help", $lzndomain) . "</a> | <a href=\"./edit.php?page=ultimate-tag-warrior-actions.php\">Manage Tags</a></fieldset>";
+	echo '<fieldset class="options"><legend>' . __('Configuration', $lzndomain) . '</legend>';
+	echo "<form action=\"$siteurl/wp-admin/options-general.php\" method=\"GET\">";
+	echo "<table width=\"100%\">";
+
+	foreach($configValues as $setting) {
+		if ($setting['type'] == 'boolean') {
+			UltimateTagWarriorActions::show_toggle($setting['setting'], $setting['label'], get_option($setting['setting']));
+		}
+
+		if ($setting['type'] == 'string') {
+			UltimateTagWarriorActions::show_string($setting['setting'], $setting['label'], get_option($setting['setting']));
+		}
+
+		if ($setting['type'] == 'color') {
+			UltimateTagWarriorActions::show_color($setting['setting'], $setting['label'], get_option($setting['setting']));
+		}
+
+		if ($setting['type'] == 'label') {
+			UltimateTagWarriorActions::show_label($setting['setting'], $setting['label'], get_option($setting['setting']));
+		}
+		if ($setting['type'] == 'dropdown') {
+			UltimateTagWarriorActions::show_dropdown($setting['setting'], $setting['label'], get_option($setting['setting']), $setting['options']);
+		}
+
+		if ($setting['type'] == 'multiselect') {
+			UltimateTagWarriorActions::show_multiselect($setting['setting'], $setting['label'], get_option($setting['setting']), $setting['options']);
+		}
+	}
+echo <<<CONFIGFOOTER
+	</table>
+			<input type="hidden" name="action" value="saveconfiguration">
+			<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">
+			<input type="submit" value="Save">
+		</form>
+	</fieldset>
+CONFIGFOOTER;
+
+}
+
+function ultimate_better_admin() {
+	global $lzndomain, $utw, $wpdb, $tableposts, $tabletags, $tablepost2tag, $install_directory;
+
+	$siteurl = get_option('siteurl');
+
+	echo '<div class="wrap">';
+
+	if ($_GET["action"] == "savetagupdate") {
 		$tagid = $_GET["edittag"];
 
 		if ($_GET["updateaction"] == "Rename") {
@@ -194,40 +268,7 @@ function ultimate_better_admin() {
 		}
 	}
 
-	echo "<fieldset class=\"options\"><legend>" . __("Help!", $lzndomain) . "</legend><a href=\"$siteurl/wp-content/plugins$install_directory/ultimate-tag-warrior-help.html\" target=\"_new\">" . __("Local help", $lzndomain) . "</a> | <a href=\"http://www.neato.co.nz/ultimate-tag-warrior\" target=\"_new\">" . __("Author help", $lzndomain) . "</a></fieldset>";
-	echo '<fieldset class="options"><legend>' . __('Configuration', $lzndomain) . '</legend>';
-	echo "<form action=\"$siteurl/wp-admin/edit.php\" method=\"GET\">";
-	echo "<table>";
-
-	foreach($configValues as $setting) {
-		if ($setting['type'] == 'boolean') {
-			UltimateTagWarriorActions::show_toggle($setting['setting'], $setting['label'], get_option($setting['setting']));
-		}
-
-		if ($setting['type'] == 'string') {
-			UltimateTagWarriorActions::show_string($setting['setting'], $setting['label'], get_option($setting['setting']));
-		}
-
-		if ($setting['type'] == 'color') {
-			UltimateTagWarriorActions::show_color($setting['setting'], $setting['label'], get_option($setting['setting']));
-		}
-
-		if ($setting['type'] == 'label') {
-			UltimateTagWarriorActions::show_label($setting['setting'], $setting['label'], get_option($setting['setting']));
-		}
-		if ($setting['type'] == 'dropdown') {
-			UltimateTagWarriorActions::show_dropdown($setting['setting'], $setting['label'], get_option($setting['setting']), $setting['options']);
-		}
-	}
-echo <<<CONFIGFOOTER
-	</table>
-			<input type="hidden" name="action" value="saveconfiguration">
-			<input type="hidden" name="page" value="ultimate-tag-warrior-actions.php">
-			<input type="submit" value="Save">
-		</form>
-	</fieldset>
-CONFIGFOOTER;
-
+	echo "<fieldset class=\"options\"><legend>" . __("Help!", $lzndomain) . "</legend><a href=\"$siteurl/wp-content/plugins$install_directory/ultimate-tag-warrior-help.html\" target=\"_new\">" . __("Local help", $lzndomain) . "</a> | <a href=\"http://www.neato.co.nz/ultimate-tag-warrior\" target=\"_new\">" . __("Author help", $lzndomain) . "</a> | <a href=\"./options-general.php?page=ultimate-tag-warrior-actions.php\">Configuration</a></fieldset>";
 
 	echo '<fieldset class="options"><legend>' . __("Edit Tags", $lzndomain) .'</legend>';
 	echo '<p>' . __("Enter a comma separated list of tags", $lzndomain) . '</p>';
@@ -307,12 +348,25 @@ function show_dropdown($settingName, $label, $value, $options) {
 	}
 
 	echo "</select></td></tr>";
-FORMWIDGET;
+}
+
+function show_multiselect($settingName, $label, $value, $options) {
+	echo "<tr><td valign=\"top\">$label</td><td>";
+
+	foreach($options as $option) {
+		echo "<input type='checkbox' value=\"$option\" name=\"$settingName:$option\"";
+		if (strpos($value,$option) > 0) {
+			echo " checked";
+		}
+		echo "> $option<br />";
+	}
+
+	echo "</td></tr>";
 }
 
 function show_label($settingName, $label, $value) {
 	echo <<<FORMWIDGET
-<tr><td colspan="2"><strong>$label</strong></td></tr>
+<tr><td colspan="2" bgcolor="#DDD"><strong>$label</strong></td></tr>
 FORMWIDGET;
 }
 
@@ -331,11 +385,9 @@ FORMWIDGET;
 function show_toggle($settingName, $label, $value) {
 	if ($value == 'yes') {
 		$yeschecked = " checked";
-	} else {
-		$nochecked = " checked";
 	}
 	echo <<<FORMWIDGET
-<tr><td>$label</td><td><label for="y$settingName">Yes </label><input type="radio" name="$settingName" id="y$settingName" value="yes" $yeschecked> <label for="n$settingName">No</label> <input type="radio" name="$settingName" id="n$settingName" value="no" $nochecked></td></tr>
+<tr><td>$label</td><td><input type="checkbox" name="$settingName" id="$settingName" value="yes" $yeschecked></td></tr>
 FORMWIDGET;
 }
 
@@ -479,12 +531,33 @@ JAVASCRIPT;
 function ultimate_the_content_filter($thecontent='') {
 	global $post, $utw, $lzndomain;
 
+	$tags = null;
 	if (get_option('utw_include_local_links') == 'yes') {
-		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), array("first"=>"<span class=\"localtags\">%taglink% ","default"=>"%taglink% ", "last"=>"%taglink%</span>"));
+		$tags = $utw->GetTagsForPost($post->ID);
+
+		if (get_option('utw_primary_automagically_included_link_format') != '') {
+			$thecontent = $thecontent . $utw->FormatTags($tags, $utw->GetFormatForType(get_option('utw_primary_automagically_included_link_format')));
+		} else {
+			$thecontent = $thecontent . $utw->FormatTags($tags, array("first"=>"<span class=\"localtags\">%taglink% ","default"=>"%taglink% ", "last"=>"%taglink%</span>"));
+		}
 	}
+
 	if (get_option('utw_include_technorati_links') == 'yes') {
-		$thecontent = $thecontent . $utw->FormatTags($utw->GetTagsForPost($post->ID), array("first"=>__("<span class=\"technoratitags\">Technorati Tags", $lzndomain) . ": %technoratitag% ", "default"=>"%technoratitag% ", "last"=>"%technoratitag%</span>","none"=>""));
+		if ($tags == null) $tags = $utw->GetTagsForPost($post->ID);
+
+		if (get_option('utw_secondary_automagically_included_link_format') != '') {
+			$thecontent = $thecontent . $utw->FormatTags($tags, $utw->GetFormatForType(get_option('utw_secondary_automagically_included_link_format')));
+		} else {
+			$thecontent = $thecontent . $utw->FormatTags($tags, array("first"=>__("<span class=\"technoratitags\">Technorati Tags", $lzndomain) . ": %technoratitag% ", "default"=>"%technoratitag% ", "last"=>"%technoratitag%</span>","none"=>""));
+		}
 	}
+
+	if (is_feed() && get_option('utw_append_tag_links_to_feed')) {
+		if ($tags == null) $tags = $utw->GetTagsForPost($post->ID);
+
+		$thecontent = $thecontent . $utw->FormatTags($tags, $utw->GetFormatForType('commalist'));
+	}
+
 	return $thecontent;
 }
 

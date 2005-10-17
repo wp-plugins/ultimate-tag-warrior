@@ -1,26 +1,31 @@
 <html>
 <head>
-<title>Ultimate Tag Warrior 2.8.2:  Help</title>
+<title>Ultimate Tag Warrior 2.8.4:  Help</title>
 <style type="text/css">
 body, td {font-family:Verdana; font-size:0.8em; line-height:2em;}
-dt {font-weight:bolder; }
+dt {font-weight:bolder; font-size:90%}
 dt code {color:green}
 code {font-size:120%}
 h2 {font-size:150%; color:red;}
 h3 {font-size:140%; color:navy; border-bottom:1px solid blue;}
 h4 {font-size:120%; color:blue;}
+h5 {font-size:110%; color:black;}
 .red {color:red}
 .blue {color:blue}
 .pageblock {border:solid 1px grey; padding:2px; margin:2px;}
 </style>
 </head>
 <body>
-<h2>Ultimate Tag Warrior 2.8.3:  Help</h2>
+<h2>Ultimate Tag Warrior 2.8.4:  Help</h2>
 <div style="float:right; background:white; width:25%; margin:5px; padding:5px; border:1px blue solid; font-size:90%"><p><b>Table of Contents</b></p>
 <ul><li><a href="ultimate-tag-warrior-help.html#install">Installation</a></li>
-<li><a href="ultimate-tag-warrior-help.html#admin">Administration of UTW</a>
+<li><a href="ultimate-tag-warrior-help.html#admin">Configuation</a>
 <ul>
-<li><a href="ultimate-tag-warrior-help.html#configuration">Configuration</a></li>
+<li><a href="ultimate-tag-warrior-help.html#configurationhelp">Help</a></li>
+<li><a href="ultimate-tag-warrior-help.html#configuration">Configuration Options</a></li>
+</ul></li>
+<li><a href="ultimate-tag-warrior-help.html#manage">Manage Tags</a>
+<li><a href="ultimate-tag-warrior-help.html#managehelp">Help</a></li>
 <li><a href="ultimate-tag-warrior-help.html#edittags">Edit Tags</a></li>
 <li><a href="ultimate-tag-warrior-help.html#assignsynonyms">Assign Synonyms</a></li>
 <li><a href="ultimate-tag-warrior-help.html#tidytags">Tidy Tags</a></li>
@@ -81,24 +86,42 @@ h4 {font-size:120%; color:blue;}
 <li><b>Ultimate Tag Warrior: Tag Archive 1.0:</b> Optional Add-on plugin to render an archive view, based on tags. Requires Ultimate Tag Warrior 2.5.1+.</li>
 <li><b>Ultimate Tag Warrior 1.3 Legacy:</b> This is a plugin for compatibility with UTW 1.3.  With this plugin installed,  the syntax of the older plugin will continue to work;  allowing you to use the new plugin code without making changes to your templates.</li>
 </ul></dd>
-<dt>Set Options:</dt><dd>From the WordPress Administration Panels, choose <b>Manage > Tags</b>. Set the  <a href="#admin">options to meet your needs.</a>.</dd></dl>
+<dt>Set Options:</dt><dd>From the WordPress Administration Panels, choose <b>Options > Tags</b>. Set the  <a href="#admin">options to meet your needs.</a>.</dd></dl>
 
-<a name="admin"></a><h3>Administration</h3>
+<a name="admin"></a><h3>Configuration</h3>
 <p>Ultimate Tag Warrior offers a wide range of customization options.</p>
 
-<h4>Help!</h4>
-<p>If you need access to this file for reference or help, or the link to the main <a href="http://www.neato.co.nz/ultimate-tag-warrior/">Ultimate Tag Warrior</a> page, I've provided two links under Help at the top of the screen to guide you.</p>
+<a name="configurationhelp"></a><h4>Help!</h4>
+<p>If you need access to this file for reference or help, or the link to the main <a href="http://www.neato.co.nz/ultimate-tag-warrior/">Ultimate Tag Warrior</a> page, I've provided two links under Help at the top of the screen to guide you.  I've also added convenient links to move between the Configuration and Manage Tags pages.</p>
 
-<a name="configuration"></a><h4>Configuration</h4>
-<dl><dt>base url</dt><dd>This is the location of the tag "folder" relative to your WordPress site root.  It should have both leading and trailing slashes.  If you change this, either click the <b>Update Permalinks</b> button or manually change your <code>.htaccess</code> file to reflect the change.</dd>
+<a name="configuration"></a><h4>Configuration Options</h4>
+<h5>URL Settings</h5>
+<dl><dt>Use URL rewriting</dt><dd>Enabling this will use the base URL and trailing slash options to render links to local tag pages as <code>/tags/tagname</code> instead of <code>index.php?tag=tagname</code>. Usage of this requires enabling Permalinks and making sure your <code>.htaccess</code> file is writable.</dd>
+<dt>base url</dt><dd>This is the location of the tag "folder" relative to your WordPress site root.  It should have both leading and trailing slashes.  If you change this, either click the <b>Update Permalinks</b> button or manually change your <code>.htaccess</code> file to reflect the change.</dd>
 <dt>Include trailing slash on tag URLs</dt><dd>This will append rewritten URLs with a slash, so instead of <code>/tags/tag</code>, URLs are <code>/tags/tag/</code>.</dd>
-<dt>Automatically include Technorati and local links</dt><dd>These options allow specifying whether Technorati and/or local tag links should be included in the post text automatically.  By default, Technorati tags are included, but local tags are not. The included tags will appear at the bottom of your post text. To customize their appearance, see <a href="#customformatting">customizing post tags</a>.</dd>
-<dt>Automatically add categories as tags</dt><dd>This will add the names of any categories selected to the list of tags. They will appear in the post and in the tag cloud or lists.</dd>
-<dt>Use URL rewriting</dt><dd>Enabling this will use the base URL and trailing slash options to render links to local tag pages as <code>/tags/tagname</code> instead of <code>index.php?tag=tagname</code>. Usage of this requires enabling Permalinks and making sure your <code>.htaccess</code> file is writable.</dd>
-<dt>Always display tag links on edit post page</dt><dd>You have three choices here for the method to display the list of links to existing tags on the <strong>Write Post</strong> panel.  <strong>None</strong> will not display anything. <strong>Tag List</strong> will display a list of all the existing tags. <strong>Dropdown</strong> will display the list in a dropdown menu.</dd>
-<dt>Tag Cloud Colors</dt><dd>This is the section that sets the font colors and sizes for displaying a tag cloud on your site. The colors must be full six digit hexadecimal values (e.g. <code>#FFFFFF</code> or <code>#8F5B2L</code>).  Font sizes can be set for the most and least popular tags.  Use only positive values for these. At the bottom of the list you can choose the font size unit as percentage, <code>px</code> (pixel, <code>pt</code> (point), or <code>em</code>. Both values use the same units.</dd>
-<dt>Save</dt><dd>To save the changes you've made within this section, click the <strong>Save</strong> button.</dd>
 </dl>
+
+<h5>Debugging</h5>
+<dl><dt>Include debugging information</dt><dd>This will include debug information in comments.  (Presently,  there is no debug information (; )</dd></dl>
+
+<h5>Automatic Tag Link Inclusion</h5>
+<dl><dt>Include local tag links in feeds</dt><dd>This will append a comma separated list of tags to the end of content items,  when the content item appears in a feed.</dd>
+<dt>Automatically include primary and secondary tag links</dt><dd>These options allow specifying whether tag links should be included in the post text automatically.  For each set of tag links, there is a list of the pre-defined formats that are available.  The selected format will be used to display the tags.</dd></dl>
+
+<h5>Global Formatting Settings</h5>
+<dl><dt>Colors and Font sizes</dt><dd>This is the section that sets the font colors and sizes for displaying a tag cloud on your site. The colors must be full six digit hexadecimal values (e.g. <code>#FFFFFF</code> or <code>#8F5B2L</code>).  Font sizes can be set for the most and least popular tags.  Use only positive values for these. At the bottom of the list you can choose the font size unit as percentage, <code>px</code> (pixel, <code>pt</code> (point), or <code>em</code>. Both values use the same units.</dd>
+<dt>Icons to display in icon formats</dt><dd>This allows choosing the icons that display for icon based formats.  You can choose as many icons to include as you would like.  The same set of icons will appear in all locations.  If you need to have different icons in different places;  let me know,  and I'll see if I can think of an alternative that will allow that.</dd></dl>
+
+<h5>Editing Options</h5>
+<dl><dt>Automatically add categories as tags</dt><dd>This will add the names of any categories selected to the list of tags. They will appear in the post and in the tag cloud or lists.</dd>
+<dt>Always display tag links on edit post page</dt><dd>You have three choices here for the method to display the list of links to existing tags on the <strong>Write Post</strong> panel.  <strong>None</strong> will not display anything. <strong>Tag List</strong> will display a list of all the existing tags. <strong>Dropdown</strong> will display the list in a dropdown menu.</dd></dl>
+
+<h5>Finally..</h5>
+<dl><dt>Save</dt><dd>To save the changes you've made within this section, click the <strong>Save</strong> button.</dd></dl>
+
+<a name="manage"></a><h3>Manage Tags</h3>
+<a name="managehelp"></a><h4>Help!</h4>
+<p>If you need access to this file for reference or help, or the link to the main <a href="http://www.neato.co.nz/ultimate-tag-warrior/">Ultimate Tag Warrior</a> page, I've provided two links under Help at the top of the screen to guide you.  I've also added convenient links to move between the Configuration and Manage Tags pages.</p>
 
 <a name="edittags"></a><h4>Edit Tags</h4>
 <p>The <strong>Edit Tags</strong> section allows renaming, replacing and deleting tags.  If you add more than one tag, then each of the tags will be associated with each of the posts that were tagged with the original tag.  For example, if you rename the <code>bananas</code> category to "<code>fruit, yellow</code>", then any post that was tagged with <code>banana</code> will become tagged with both <code>fruit</code> <i>and</I> <code>yellow</code> instead.</p>

@@ -210,7 +210,7 @@ SQL;
 			$q = "SELECT count(*) FROM $tablepost2tag WHERE tag_id = '$tagid'";
 
 			if ( 0 == $wpdb->get_var($q)) {
-				$q = "DELETE FROM $tabletag WHERE tag_id = $tagid";
+				$q = "DELETE FROM $tabletags WHERE tag_id = $tagid";
 				$wpdb->query($q);
 			}
 		}
@@ -520,7 +520,7 @@ SQL;
 
 			return $synonym;
 		}
-		return "";
+		return $tag;
 	}
 
 
@@ -842,6 +842,7 @@ SQL;
 		$trati_tag_name = str_replace(' ', '+', $tag_display);
 		$flickr_tag_name = str_replace(' ', '', $tag_display);
 		$wiki_tag_name = str_replace(' ', '_', $tag_display);
+		$gada_tag_name = str_replace(' ', '.',$tag_display);
 
 		$baseurl = get_option('utw_base_url');
 		$home = get_option('home');
@@ -868,6 +869,39 @@ SQL;
 				}
 			} else {
 				$type = "and";
+			}
+		}
+
+		$iconsettings = explode('|', get_option('utw_icons'));
+		$iconformat = '';
+		foreach($iconsettings as $iconsetting) {
+			switch($iconsetting) {
+				case 'Technorati':
+					$iconformat .= '%technoratiicon%';
+					break;
+				case 'Flickr':
+					$iconformat .= '%flickricon%';
+					break;
+
+				case 'delicious':
+					$iconformat .= '%deliciousicon%';
+					break;
+
+				case 'Wikipedia':
+					$iconformat .= '%wikipediaicon%';
+					break;
+
+				case 'gadabe':
+					$iconformat .= '%gadabeicon%';
+					break;
+
+				case 'Zniff':
+					$iconformat .= '%znifficon%';
+					break;
+
+				case 'RSS':
+					$iconformat .= '%rssicon%';
+					break;
 			}
 		}
 
@@ -913,14 +947,18 @@ SQL;
 		$format = str_replace('%flickrtag%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%delicioustag%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%wikipediatag%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\">$tag_display</a>", $format);
+		$format = str_replace('%gadabetag%', "<a href=\"http://$gada_tag_name.gada.be\" rel=\"tag\">$tag_display</a>", $format);
+		$format = str_replace('%znifftag%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%rsstag%', "<a href=\"$rssurl\" rel=\"tag\">RSS</a>", $format);
 
-		$format = str_replace('%icons%', '%technoratiicon%%flickricon%%deliciousicon%%wikipediaicon%%rssicon%%intersectionicon%%unionicon%', $format);
+		$format = str_replace('%icons%', $iconformat, $format);
 
 		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%gadabeicon%', "<a href=\"http://$gada_tag_name.gada.be\"><img src=\"$siteurl/wp-content/plugins$install_directory/gadaicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%znifficon%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\" target=\"_blank\"><img src=\"$siteurl/wp-content/plugins$install_directory/znifficon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 		$format = str_replace('%rssicon%', "<a href=\"$rssurl\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
 		$format = str_replace('%intersectionurl%', $tagseturl, $format);
@@ -1007,8 +1045,10 @@ SQL;
 		return $format;
 	}
 
+	var $predefinedFormats = array();
+
 	function GetFormatForType($formattype) {
-		global $user_level, $post, $lzndomain;
+		global $user_level, $post, $lzndomain, $predefinedFormats;
 
 		if ($post->ID) {
 			$postid = $post->ID;
@@ -1016,78 +1056,48 @@ SQL;
 			$postid = $_REQUEST["post"];
 		}
 
-		switch($formattype) {
-			case "tagsetsimplelist":
-				return array('first'=>'%taglink%', 'default'=>' %operatortext% %taglink%');
+		if (count($predefinedFormats) == 0) {
+			$predefinedFormats["tagsetsimplelist"] = array('first'=>'%taglink%', 'default'=>' %operatortext% %taglink%');
+			$predefinedFormats["tagsetcommalist"] = array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>' %operatortext% %taglink%');
+			$predefinedFormats["simplelist"] = array ("default"=>"%taglink% ", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["iconlist"] = array ("default"=>"%taglink% %icons% ", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["htmllist"] = array ("default"=>"<li>%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
+			$predefinedFormats["htmllisticons"] = array ("default"=>"<li>%icons%%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
+			$predefinedFormats["htmllistandor"] = array ("default"=>"<li>%taglink% %intersectionlink% %unionlink%</li>","none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
+			$predefinedFormats["commalist"] = array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["commalisticons"] = array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["technoraticommalist"] = array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["gadabecommalist"] = array ("default"=>", %gadabetag%", "first"=>"%gadabetag%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["andcommalist"] = array ("default"=>", %taglink% %intersectionlink% %unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
 
-			case "tagsetcommalist":
-				return array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>' %operatortext% %taglink%');
+			$relStr = "";
+			if ($formattype == "superajaxrelated" || $formattype == "superajaxrelateditem") {
+				$relStr = "rel";
+			}
 
-			case "simplelist":
-				return array ("default"=>"%taglink% ", "none"=>__("No Tags", $lzndomain) );
-
-			case "iconlist":
-				return array ("default"=>"%taglink% %icons% ", "none"=>__("No Tags", $lzndomain) );
-
-			case "htmllist":
-				return array ("default"=>"<li>%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
-
-			case "htmllisticons":
-				return array ("default"=>"<li>%icons%%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
-
-			case "htmllistandor":
-				return array ("default"=>"<li>%taglink% %intersectionlink% %unionlink%</li>","none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
-
-			case "commalist":
-				return array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
-
-			case "commalisticons":
-				return array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
-
-			case "technoraticommalist":
-				return array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
-
-			case "andcommalist":
-				return array ("default"=>", %taglink% %intersectionlink% %unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
-
-			case "superajax":
-			case "superajaxitem":
-			case "superajaxrelated":
-			case "superajaxrelateditem":
-
-				$relStr = "";
-				if ($formattype == "superajaxrelated" || $formattype == "superajaxrelateditem") {
-					$relStr = "rel";
-				}
-
-				$default = "<span id=\"tags-%postid%-%tag%\">%taglink%";
-				if ($user_level > 3 && $postid != "") {
-					if ($formattype == 'superajaxrelated' || $formattype == 'superajaxrelateditem') {
-						$default .= "[<a href=\"javascript:sndReq('add', '%tag%', '%postid%', '$formattype')\">+</a>]";
-					} else {
-						$default .= "[<a href=\"javascript:sndReq('del', '%tag%', '%postid%', '$formattype')\">-</a>]";
-					}
-					$aft = " <input type=\"text\" size=\"9\" id=\"addTag-%postid%\" /> <input type=\"button\" value=\"+\" onClick=\"sndReq('add', document.getElementById('addTag-%postid%').value, '%postid%', '$formattype')\" />";
-				}
-
-				$default .= "<a href=\"javascript:sndReq('expand$relStr', '%tag%', '%postid%', '$formattype')\">&raquo;</a> </span>";
-				$aft .= "</span>";
-				if ($formattype == "superajax") {
-					return array("pre"=>"<span id=\"tags-%postid%\">","default"=>$default, "post"=>"$aft");
+			$default = "<span id=\"tags-%postid%-%tag%\">%taglink%";
+			if ($user_level > 3 && $postid != "") {
+				if ($formattype == 'superajaxrelated' || $formattype == 'superajaxrelateditem') {
+					$default .= "[<a href=\"javascript:sndReq('add', '%tag%', '%postid%', '$formattype')\">+</a>]";
 				} else {
-					return $default;
+					$default .= "[<a href=\"javascript:sndReq('del', '%tag%', '%postid%', '$formattype')\">-</a>]";
 				}
+				$aft = " <input type=\"text\" size=\"9\" id=\"addTag-%postid%\" /> <input type=\"button\" value=\"+\" onClick=\"sndReq('add', document.getElementById('addTag-%postid%').value, '%postid%', '$formattype')\" />";
+			}
 
-			case "linkset":
-			case "linksetrel":
-				$newFormat = "superajaxitem";
-				if ($formattype == "linksetrel") { $newFormat = "superajaxrelated"; }
-				return "%taglink% %icons%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', '$newFormat')\">&laquo;</a>&#160;";
+			$default .= "<a href=\"javascript:sndReq('expand$relStr', '%tag%', '%postid%', '$formattype')\">&raquo;</a> </span>";
+			$aft .= "</span>";
 
-			case "weightedlinearbar":
-				return array("default"=>"<td width=\"%tagweightint%%\" style=\"background-color:%tagrelweightcolor%; border-right:1px solid black;\"><a href=\"%tagurl%\" title=\"%tagdisplay%\" style=\"color:%tagrelweightcolor%;\"><div width=\"100%\">&#160;</div></a></td>", "pre"=>"<table cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid black; border-right:0px\" width=\"100%\"><tr>", "post"=>"</tr></table>");
+			$predefinedFormats["superajax"] = array("pre"=>"<span id=\"tags-%postid%\">","default"=>$default, "post"=>"$aft");;
+			$predefinedFormats["superajaxitem"] = $default;
+			$predefinedFormats["superajaxrelated"] = $default;
+			$predefinedFormats["superajaxrelateditem"] = $default;
 
-			case "weightedlongtail":
+			$predefinedFormats["linkset"] = "%taglink% %icons%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', 'superajaxitem')\">&laquo;</a>&#160;";
+			$predefinedFormats["linksetrel"] = "%taglink% %icons%<a href=\"javascript:sndReq('shrink', '%tag%', '%postid%', 'superajaxrelated')\">&laquo;</a>&#160;";
+
+			$predefinedFormats["weightedlinearbar"] = array("default"=>"<td width=\"%tagweightint%%\" style=\"background-color:%tagrelweightcolor%; border-right:1px solid black;\"><a href=\"%tagurl%\" title=\"%tagdisplay%\" style=\"color:%tagrelweightcolor%;\"><div width=\"100%\">&#160;</div></a></td>", "pre"=>"<table cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid black; border-right:0px\" width=\"100%\"><tr>", "post"=>"</tr></table>");
+
 				// Thanks http://www.cssirc.com/codes/?code=23!
 				$css = <<<CSS
 				<style type="text/css">
@@ -1099,37 +1109,34 @@ SQL;
 				.longtail li div {position: absolute;bottom: 0; left: 0;width: 100%;background-color:#000;}
 				</style>
 CSS;
-				return array("pre"=>"$css<ol class=\"longtail\">", "default"=>"<li><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div style=\"height:%tagrelweightint%%\">&#160;</div></a></li>", "post"=>"</ol>");
 
-			case "weightedlongtailvertical":
-				return array("pre"=>"<div class=\"longtailvert\">", "default"=>'<div style="background-color:%tagrelweightrankcolor%; width:%tagrelweightint%%; \"><a href="%tagurl%" title="%tagdisplay% (%tagcount%)" style="display:block; ">%tagdisplay%</a></div>', "post"=>"</div>");
-
-			case "coloredtagcloud":
-				return array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
-
-			case "sizedtagcloud":
-				return array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%\">%tagdisplay%</a> ");
-
-			case "coloredsizedtagcloud":
-			case "sizedcoloredtagcloud":
-				return array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
+			$predefinedFormats["weightedlongtail"] = array("pre"=>"$css<ol class=\"longtail\">", "default"=>"<li><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div style=\"height:%tagrelweightint%%\">&#160;</div></a></li>", "post"=>"</ol>");;
+			$predefinedFormats["weightedlongtailvertical"] = array("pre"=>"<div class=\"longtailvert\">", "default"=>'<div style="background-color:%tagrelweightrankcolor%; width:%tagrelweightint%%; \"><a href="%tagurl%" title="%tagdisplay% (%tagcount%)" style="display:block; ">%tagdisplay%</a></div>', "post"=>"</div>");
+			$predefinedFormats["coloredtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
+			$predefinedFormats["sizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%\">%tagdisplay%</a> ");
+			$predefinedFormats["coloredsizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
+			$predefinedFormats["sizedcoloredtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
 
 			// Thanks drac! http://lair.fierydragon.org/
-			case "coloredsizedtagcloudwithcount":
-				return array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
-
-			case "postsimplelist":
-				return array ("default"=>"%postlink%");
-
-			case "postcommalist":
-				return array ("default"=>", %postlink%", "first"=>"%postlink%", "none"=> __("No Related Posts", $lzndomain));
-
-			case "posthtmllist":
-				return array ("default"=>"<li>%postlink%</li>", "none"=>"<li>" . __("No Related Posts", $lzndomain) . "</li>");
-
-			case "custom":
-				return "";
+			$predefinedFormats["coloredsizedtagcloudwithcount"] = array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
+			$predefinedFormats["postsimplelist"] = array ("default"=>"%postlink%");
+			$predefinedFormats["postcommalist"] = array ("default"=>", %postlink%", "first"=>"%postlink%", "none"=> __("No Related Posts", $lzndomain));
+			$predefinedFormats["posthtmllist"] = array ("default"=>"<li>%postlink%</li>", "none"=>"<li>" . __("No Related Posts", $lzndomain) . "</li>");
 		}
+
+		if (array_key_exists($formattype, $predefinedFormats)) {
+			return $predefinedFormats[$formattype];
+		} else {
+			return "";
+		}
+	}
+
+	function GetPredefinedFormatNames() {
+		global $predefinedFormats;
+		if (count($predefinedFormats) == 0) {
+			$this->GetFormatForType("");
+		}
+		return array_keys($predefinedFormats);
 	}
 
 	/* This is pretty filthy.  Doing math in hex is much too weird.  It's more likely to work,  this way! */

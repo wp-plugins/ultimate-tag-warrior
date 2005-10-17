@@ -57,7 +57,7 @@ switch($action) {
 		$sock = fsockopen($keywordAPISite, 80, $errno, $errstr, 30);
 		if (!$sock) die("$errstr ($errno)\n");
 
-		$data = $HTTP_RAW_POST_DATA;
+		$data = urlencode(strip_tags(urldecode($HTTP_RAW_POST_DATA)));
 
 		$xml = "";
 		if ($bypost) {
@@ -82,6 +82,8 @@ switch($action) {
 
 			fclose($sock);
 		} else {
+			// Fall back to whatever this approach is called if it isn't.
+
 			$tagyu_url = 'http://' . $keywordAPISite . $keywordAPIUrl . $data;
 
 			$xml = file_get_contents($tagyu_url);

@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Ultimate Tag Warrior 2.8.3:  Help:  Custom Formatting</title>
+<title>Ultimate Tag Warrior 2.8.4:  Help:  Custom Formatting</title>
 <style type="text/css">
 body, td {font-family:Verdana; font-size:0.8em; line-height:2em;}
 dt {font-weight:bolder; }
@@ -24,9 +24,13 @@ table, td {border:1px solid #AAA}
 <h2>Custom Formatting</h2>
 <div style="float:right; background:white; width:25%; margin:5px; padding:5px; border:1px blue solid; font-size:90%"><p><b>Table of Contents</b></p>
 <ul><li><a href="ultimate-tag-warrior-help.html#install">Installation</a></li>
-<li><a href="ultimate-tag-warrior-help.html#admin">Administration of UTW</a>
+<li><a href="ultimate-tag-warrior-help.html#admin">Configuation</a>
 <ul>
-<li><a href="ultimate-tag-warrior-help.html#configuration">Configuration</a></li>
+<li><a href="ultimate-tag-warrior-help.html#configurationhelp">Help</a></li>
+<li><a href="ultimate-tag-warrior-help.html#configuration">Configuration Options</a></li>
+</ul></li>
+<li><a href="ultimate-tag-warrior-help.html#manage">Manage Tags</a>
+<li><a href="ultimate-tag-warrior-help.html#managehelp">Help</a></li>
 <li><a href="ultimate-tag-warrior-help.html#edittags">Edit Tags</a></li>
 <li><a href="ultimate-tag-warrior-help.html#assignsynonyms">Assign Synonyms</a></li>
 <li><a href="ultimate-tag-warrior-help.html#tidytags">Tidy Tags</a></li>
@@ -66,6 +70,7 @@ table, td {border:1px solid #AAA}
 <li><a href="ultimate-tag-warrior-help-custom-formatting.html#customformats">Putting it all together</a></li>
 </ul></li>
 </ul>
+
 </div>
 
 <div class="chunk">
@@ -125,13 +130,17 @@ table, td {border:1px solid #AAA}
 <tr><td>%flickrtag%</td><td>Link to the Flickr page for the tag.  This removes spaces from the tag, in the URL.</td><td><a href="http://www.flickr.com/photos/tags/foobar" rel="tag">Foo Bar</a></td></tr>
 <tr><td>%delicioustag%</td><td>Link to the del.icio.us page for the tag.  The tag in the URL is left unchanged.</td><td><a href="http://del.icio.us/tags/foo_bar">Foo Bar</a></td></tr>
 <tr><td>%wikipediatag%</td><td>Link to the Wikipedia page for the tag.  Spaces are converted to underscores in the tag URL.</td><td><a href="http://en.wikipedia.org/wiki/foo_bar">Foo Bar</a></td></tr>
+<tr><td>%gadabetag%</td><td>Link to the gada.be page for the tag.  Spaces are converted to fullstops in the tag URL.</td><td><a href="http://foo.bar.gada.be">Foo Bar</a></td></tr>
+<tr><td>%znifftag%</td><td>Link to the Zniff page for the tag.  Spaces are converted to underscores in the tag URL.</td><td><a href="http://zniff.com/?s=%22foo_bar%22&sort=">Foo Bar</a></td></tr>
 <tr><td>%rsstag%</td><td>A link to the RSS feed for the tag</td><td><a href="http://www.site.com/tags/foo_bar/feed/rss">Foo Bar</a></td></tr>
 <tr><td>%technoratiicon%</td><td>Links to Technorati, with an icon</td><td><a href="http://www.technorati.com/tag/foo+bar" rel="tag"><img src="./technoratiicon.jpg" border="0" hspace="1"></a></td></tr>
 <tr><td>%flickricon%</td><td>Links to Flickr, with an icon</td><td><a href="http://www.flickr.com/photos/tags/foobar" rel="tag"><img src="./flickricon.jpg" border="0" hspace="1"></a></td></tr>
 <tr><td>%deliciousicon%</td><td>Links to del.icio.us with an icon</td><td><a href="http://del.icio.us/tags/foo_bar" rel="tag"><img src="./deliciousicon.jpg" border="0" hspace="1"></a></td></tr>
 <tr><td>%wikipediaicon%</td><td>Links to Wikipedia with an icon</td><td><a href="http://en.wikipedia.org/wiki/foo_bar" rel="tag"><img src="./wikiicon.jpg" border="0" hspace="1"></a></td></tr>
+<tr><td>%gadabeicon%</td><td>Links to gada.be with an icon</td><td><a href="http://foo.bar.gada.be" rel="tag"><img src="./gadaicon.jpg" border="0" hspace="1"></a></td></tr>
+<tr><td>%znifficon%</td><td>Links to Zniff with an icon</td><td><a href="http://zniff.com/?s=%22foo_bar%22&sort=" rel="tag"><img src="./znifficon.jpg" border="0" hspace="1"></a></td></tr>
 <tr><td>%rssicon%</td><td>Link to the RSS feed, with an icon</td><td><a href="http://www.site.com/tags/foo_bar/feed/rss" rel="tag"><img src="./rssicon.jpg" border="0" hspace="1"></a></td></tr>
-<tr><td>%icons%</td><td>All of the icons.  The union and intersection icons only display when appropriate.</td><td><a href="http://www.technorati.com/tag/foo+bar"><img src="technoratiicon.jpg" border="0" hspace="1"/></a><a href="http://www.flickr.com/photos/tags/foobar"><img src="flickricon.jpg" border="0" hspace="1"/></a><a href="http://del.icio.us/tag/foo_bar"><img src="deliciousicon.jpg" border="0" hspace="1"/></a><a href="http://en.wikipedia.org/wiki/foo_bar"><img src="wikiicon.jpg" border="0" hspace="1"/></a><a href="http://www.site.com/tags/foo_bar/feed/rss2"><img src="rssicon.jpg" border="0" hspace="1"/></a><a href="http://www.site.com/tags/monkey+foo_bar/"><img src="intersectionicon.jpg" border="0" hspace="1"/></a><a href="http://www.site.com/tags/monkey|foo_bar/"><img src="unionicon.jpg" border="0" hspace="1"/></a></td></tr>
+<tr><td>%icons%</td><td>Display a set of icons.  The union and intersection icons only display when appropriate;  the other icons can be toggled on and off through the Options page.</td><td><a href="http://www.technorati.com/tag/foo+bar"><img src="technoratiicon.jpg" border="0" hspace="1"/></a><a href="http://www.flickr.com/photos/tags/foobar"><img src="flickricon.jpg" border="0" hspace="1"/></a><a href="http://del.icio.us/tag/foo_bar"><img src="deliciousicon.jpg" border="0" hspace="1"/></a><a href="http://en.wikipedia.org/wiki/foo_bar"><img src="wikiicon.jpg" border="0" hspace="1"/></a><a href="http://foo.bar.gada.be" rel="tag"><img src="./gadaicon.jpg" border="0" hspace="1"></a><a href="http://zniff.com/?s=%22foo_bar%22&sort=" rel="tag"><img src="./znifficon.jpg" border="0" hspace="1"></a><a href="http://www.site.com/tags/foo_bar/feed/rss2"><img src="rssicon.jpg" border="0" hspace="1"/></a><a href="http://www.site.com/tags/monkey+foo_bar/"><img src="intersectionicon.jpg" border="0" hspace="1"/></a><a href="http://www.site.com/tags/monkey|foo_bar/"><img src="unionicon.jpg" border="0" hspace="1"/></a></td></tr>
 <tr><td>%postid%</td><td>The ID of the current post</td><td>11</td></tr>
 </table>
 </div>
