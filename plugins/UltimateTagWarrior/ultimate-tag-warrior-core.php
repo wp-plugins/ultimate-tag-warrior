@@ -4,7 +4,7 @@ $tablepost2tag = $table_prefix . "post2tag";
 $tabletag_synonyms = $table_prefix . "tag_synonyms";
 
 $lzndomain = "ultimate-tag-warrior";
-$current_build = 5;
+$current_build = 6;
 
 class UltimateTagWarriorCore {
 
@@ -74,7 +74,7 @@ SQL;
 
 		if ($installed_build < 3) {
 
-		$q = <<<SQL
+			$q = <<<SQL
 		CREATE TABLE IF NOT EXISTS $tabletag_synonyms (
 		  tagsynonymid int(11) NOT NULL auto_increment,
 		  tag_id int(11) NOT NULL default '0',
@@ -92,9 +92,9 @@ SQL;
 			}
 		}
 
-		if ($installed_build < 5) {
-			$alreadyChanged = $wpdb->get_var("SHOW COLUMNS FROM $tabletags LIKE 'ip_address'");
-			if ($alreadyChanged == 'tag_id') {
+		if ($installed_build < 6) {
+			$alreadyChanged = $wpdb->get_var("SHOW COLUMNS FROM $tablepost2tag LIKE 'ip_address'");
+			if ($alreadyChanged == 'ip_address') {
 				// do nothing! the column has already been changed; and trying to change it again makes an error.
 			} else {
 				$q = "ALTER TABLE $tablepost2tag ADD ip_address varchar(15)";

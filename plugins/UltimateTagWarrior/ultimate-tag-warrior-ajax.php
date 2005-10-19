@@ -60,6 +60,8 @@ switch($action) {
 		$data = urlencode(strip_tags(urldecode($HTTP_RAW_POST_DATA)));
 
 		$xml = "";
+		$tagyu_url = 'http://' . $keywordAPISite . $keywordAPIUrl . $data;
+
 		if ($bypost) {
 
 			fputs($sock, "POST $keywordAPIUrl HTTP/1.0\r\n");
@@ -82,12 +84,26 @@ switch($action) {
 
 			fclose($sock);
 		} else {
+
+			fputs($sock, "GET " . $keywordAPIUrl . $data . " HTTP/1.0\r\n\r\n");
+			fputs($sock, "Host: $keywordAPISite\r\n");
+			fputs($sock, "Accept: */*\r\n");
+
+			$headers = "";
+			while ($str = trim(fgets($sock, 4096)))
+			  $headers .= "$str\n";
+
+			print "\n";
+
+			while (!feof($sock))
+			  $xml .= fgets($sock, 4096);
+
+			fclose($sock);
+		} /* else {
 			// Fall back to whatever this approach is called if it isn't.
 
-			$tagyu_url = 'http://' . $keywordAPISite . $keywordAPIUrl . $data;
-
 			$xml = file_get_contents($tagyu_url);
-		}
+		} */
 
 		if (strpos($xml,'<error>') === FALSE) {
 			$loc = strpos($xml, "<tag>", 0);
