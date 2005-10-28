@@ -760,23 +760,22 @@ SQL;
 	}
 
 	function GetDateSQL () {
+		global $year, $monthnum, $day, $hour, $minute, $second;
+
 		if (is_date()) {
-			// If a month is specified in the querystring, load that month
-			$q = $_REQUEST;
-			if ( (int) $q['m'] ) {
-				$q['m'] = '' . preg_replace('|[^0-9]|', '', $q['m']);
-				$dateclause .= ' AND YEAR(post_date)=' . substr($q['m'], 0, 4);
-				if (strlen($q['m'])>5)
-					$dateclause .= ' AND MONTH(post_date)=' . substr($q['m'], 4, 2);
-				if (strlen($q['m'])>7)
-					$dateclause .= ' AND DAYOFMONTH(post_date)=' . substr($q['m'], 6, 2);
-				if (strlen($q['m'])>9)
-					$dateclause .= ' AND HOUR(post_date)=' . substr($q['m'], 8, 2);
-				if (strlen($q['m'])>11)
-					$dateclause .= ' AND MINUTE(post_date)=' . substr($q['m'], 10, 2);
-				if (strlen($q['m'])>13)
-					$dateclause.= ' AND SECOND(post_date)=' . substr($q['m'], 12, 2);
-			}
+			if ($year)
+				$dateclause .= ' AND YEAR(post_date)=' . $year;
+			if ($monthnum)
+				$dateclause .= ' AND MONTH(post_date)=' . $monthnum;
+			if ($day && strlen($day) <=2)
+				$dateclause .= ' AND DAYOFMONTH(post_date)=' . $day;
+			if ($hour)
+				$dateclause .= ' AND HOUR(post_date)=' . $hour;
+			if ($minute)
+				$dateclause .= ' AND MINUTE(post_date)=' . $minute;
+			if ($second)
+				$dateclause.= ' AND SECOND(post_date)=' . $second;
+
 		}
 
 		return $dateclause;
