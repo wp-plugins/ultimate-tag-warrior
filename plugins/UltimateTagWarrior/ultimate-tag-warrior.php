@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: UTW2:  Like UTW1,  but with even greater justice.  Allows tagging posts in a non-external-system dependent way;  with a righteous data structure for advanced tagging-mayhem.
-Version: 2.8.5
+Version: 2.8.6
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -77,6 +77,16 @@ function UTW_ShowWeightedTagSet($formattype, $format="", $limit=150) {
 	echo $utw->FormatTags($utw->GetWeightedTags("weight", "desc", $limit), $format);
 }
 
+function UTW_ShowTimeSensitiveWeightedTagSet($formattype, $format="", $limit=150) {
+	global $utw;
+
+	if ($format == "") {
+		$format = $utw->GetFormatForType($formattype);
+	}
+
+	echo $utw->FormatTags($utw->GetWeightedTags("weight", "desc", $limit, true), $format);
+}
+
 function UTW_ShowWeightedTagSetAlphabetical($formattype, $format="", $limit=150) {
 	global $utw;
 
@@ -85,6 +95,16 @@ function UTW_ShowWeightedTagSetAlphabetical($formattype, $format="", $limit=150)
 	}
 
 	echo $utw->FormatTags($utw->GetWeightedTags("tag", "asc", $limit), $format);
+}
+
+function UTW_ShowTimeSensitiveWeightedTagSetAlphabetical($formattype, $format="", $limit=150) {
+	global $utw;
+
+	if ($format == "") {
+		$format = $utw->GetFormatForType($formattype);
+	}
+
+	echo $utw->FormatTags($utw->GetWeightedTags("tag", "asc", $limit, true), $format);
 }
 
 function UTW_HasTags() {

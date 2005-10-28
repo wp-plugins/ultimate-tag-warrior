@@ -24,7 +24,10 @@ switch($action) {
 		break;
 
 	case 'add':
-		$utw->AddTag($post, $tag);
+		$tags = explode(',',$tag);
+		foreach ($tags as $t) {
+			$utw->AddTag($post, $t);
+		}
 		echo $post . "|";
 		if("" == $format) {
 			$format = "superajax";
@@ -54,15 +57,26 @@ switch($action) {
 
 
 	case 'requestKeywords':
-		$sock = fsockopen($keywordAPISite, 80, $errno, $errstr, 30);
-		if (!$sock) die("$errstr ($errno)\n");
 
-		$data = urlencode(strip_tags(urldecode($HTTP_RAW_POST_DATA)));
+
+		$noUnicode = preg_replace("/%u[0-9A-F]{4}/i","",$HTTP_RAW_POST_DATA);
+
+
+		$data = urlencode(strip_tags(urldecode($noUnicode)));
+
+		$data = str_replace('%2F','/',$data);
+		$data = str_replace('%09', '', $data);
+		$data = str_replace('%26%238217%3B','\'',$data);
+		$data = str_replace('%26%238220%3B','"',$data);
+		$data = str_replace('%26%238221%3B','"',$data);
+		$data = str_replace('%26%23038%3B','%26',$data);
 
 		$xml = "";
 		$tagyu_url = 'http://' . $keywordAPISite . $keywordAPIUrl . $data;
 
 		if ($bypost) {
+			$sock = fsockopen($keywordAPISite, 80, $errno, $errstr, 30);
+			if (!$sock) die("$errstr ($errno)\n");
 
 			fputs($sock, "POST $keywordAPIUrl HTTP/1.0\r\n");
 			fputs($sock, "Host: $keywordAPISite\r\n");
@@ -83,12 +97,18 @@ switch($action) {
 			  $xml .= fgets($sock, 4096);
 
 			fclose($sock);
+		} else if (function_exists('curl_exec')) {
+			$curl_conn = curl_init($tagyu_url);
+			curl_setopt( $curl_conn, CURLOPT_RETURNTRANSFER, 1 );
+
+			$xml = curl_exec($curl_conn);
 		} else {
+			$sock = fsockopen($keywordAPISite, 80, $errno, $errstr, 30);
+			if (!$sock) die("$errstr ($errno)\n");
 
 			fputs($sock, "GET " . $keywordAPIUrl . $data . " HTTP/1.0\r\n\r\n");
 			fputs($sock, "Host: $keywordAPISite\r\n");
 			fputs($sock, "Accept: */*\r\n");
-
 			$headers = "";
 			while ($str = trim(fgets($sock, 4096)))
 			  $headers .= "$str\n";
@@ -105,6 +125,7 @@ switch($action) {
 			$xml = file_get_contents($tagyu_url);
 		} */
 
+		$hasTags = false;
 		if (strpos($xml,'<error>') === FALSE) {
 			$loc = strpos($xml, "<tag>", 0);
 			while($loc < strlen($xml) && $loc != false) {
@@ -115,22 +136,28 @@ switch($action) {
 				$tagstr .= "'" . str_replace(' ','_',substr($xml, $loc, $end-$loc)) . "',";
 
 				$loc = strpos($xml, "<tag>", $end);
+				$hasTags = true;
 			}
 
-			// eat the trailing comma.
-			$tagstr = substr($tagstr,0,-1);
-
+			if ($hasTags) {
+				// eat the trailing comma.
+				$tagstr = substr($tagstr,0,-1);
+			}
 		} else {
 			echo $xml;
 		}
 
-		$utw->ShowRelatedTags($utw->GetTagsForTagString($tagstr), "<a href=\"javascript:addTag('%tag%')\">%tagdisplay%</a> ");
-
+		if ($hasTags) {
+			echo $utw->FormatTags($utw->GetTagsForTagString($tagstr), "<a href=\"javascript:addTag('%tag%')\">%tagdisplay%</a> ");
+		} else {
+			echo "No tag suggestions";
+		}
 		break;
 
 	case 'editsynonyms':
 
 		echo '<input type="text" name="synonyms" value="' . $utw->FormatTags($utw->GetSynonymsForTag("", $tag), array("first"=>"%tag%", "default"=>", %tag%")) . '" />';
+		break;
 	}
 
 ?>

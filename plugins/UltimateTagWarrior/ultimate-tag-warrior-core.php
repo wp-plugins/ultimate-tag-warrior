@@ -168,8 +168,9 @@ SQL;
 	function AddTag($postID, $tag) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
+		$tag = trim($tag);
+
 		if ($tag <> "") {
-			$tag = trim($tag);
 			$tag = str_replace(' ', '_', $tag);
 
 			$tag = $this->GetCanonicalTag($tag);
@@ -188,6 +189,7 @@ SQL;
 			if ( is_null($wpdb->get_var($q))) {
 				$q = "INSERT INTO $tablepost2tag (post_id, tag_id) VALUES ('$postID','$tagid')";
 				$wpdb->query($q);
+
 			}
 		}
 	}
@@ -513,12 +515,14 @@ SQL;
 
 		$truetag = $wpdb->get_var("select tag from $tabletags where tag = '$tag'");
 
-		if ($truetag) {
+		if ($truetag != "") {
 			return $truetag;
 		} else {
 			$synonym = $wpdb->get_var("select t.tag from $tabletags t INNER JOIN $tabletag_synonyms ts ON t.tag_id = ts.tag_id WHERE synonym = '$tag'");
 
-			return $synonym;
+			if ($synonym != "") {
+				return $synonym;
+			}
 		}
 		return $tag;
 	}
@@ -677,7 +681,7 @@ SQL;
 		return $wpdb->get_results($query);
 	}
 
-	function GetWeightedTags($order, $direction, $limit = 150) {
+	function GetWeightedTags($order, $direction, $limit = 150, $date_sensitive = false) {
 		global $wpdb, $tabletags, $tablepost2tag;
 
 		if ($order <> "tag" && $order <> "weight") { $order = "weight"; }
@@ -698,9 +702,11 @@ SQL;
 			$orderclause = "order by weight desc";
 		}
 
-
-		$totaltags = $this->GetDistinctTagCount();
-		$maxtag = $this->GetMostPopularTagCount();
+		if ($date_sensitive) {
+			$dateclause = $this->GetDateSQL();
+		}
+		$totaltags = $this->GetDistinctTagCount($date_sensitive);
+		$maxtag = $this->GetMostPopularTagCount($date_sensitive);
 
 		if ($totaltags == 0 || $maxtag == 0) {
 			return;
@@ -718,7 +724,7 @@ SQL;
 							  inner join $wpdb->posts p on p2t.post_id = p.ID
 			 WHERE post_date_gmt < '$now'
 			 AND post_status = 'publish'
-
+			 $dateclause
 			group by t.tag
 			$orderclause
 			$limitclause
@@ -726,29 +732,54 @@ SQL;
 
 		$results = $wpdb->get_results($query);
 
-		usort($results, array("UltimateTagWarriorCore",$sort));
+		if ($results) {
+			usort($results, array("UltimateTagWarriorCore",$sort));
 
-		if ($limit != 0) {
-			$results = array_slice($results, 0, $limit);
+			if ($limit != 0) {
+				$results = array_slice($results, 0, $limit);
+			}
+
+			$distinctweights = array();
+			foreach($results as $result) {
+				$weight = $result->relativeweight;
+				if (!array_key_exists($weight, $distinctweights)) {
+					$distinctweights[$weight] = $weight;
+				}
+			}
+
+			sort($distinctweights, SORT_NUMERIC);
+
+			$finalresults = array();
+			foreach($results as $result) {
+				$result->weightrank =  ((array_search($result->relativeweight, $distinctweights) + 1) / (count($distinctweights))) * 100;
+				$finalresults[] = $result;
+			}
+
+			return $finalresults;
 		}
+	}
 
-		$distinctweights = array();
-		foreach($results as $result) {
-			$weight = $result->relativeweight;
-			if (!array_key_exists($weight, $distinctweights)) {
-				$distinctweights[$weight] = $weight;
+	function GetDateSQL () {
+		if (is_date()) {
+			// If a month is specified in the querystring, load that month
+			$q = $_REQUEST;
+			if ( (int) $q['m'] ) {
+				$q['m'] = '' . preg_replace('|[^0-9]|', '', $q['m']);
+				$dateclause .= ' AND YEAR(post_date)=' . substr($q['m'], 0, 4);
+				if (strlen($q['m'])>5)
+					$dateclause .= ' AND MONTH(post_date)=' . substr($q['m'], 4, 2);
+				if (strlen($q['m'])>7)
+					$dateclause .= ' AND DAYOFMONTH(post_date)=' . substr($q['m'], 6, 2);
+				if (strlen($q['m'])>9)
+					$dateclause .= ' AND HOUR(post_date)=' . substr($q['m'], 8, 2);
+				if (strlen($q['m'])>11)
+					$dateclause .= ' AND MINUTE(post_date)=' . substr($q['m'], 10, 2);
+				if (strlen($q['m'])>13)
+					$dateclause.= ' AND SECOND(post_date)=' . substr($q['m'], 12, 2);
 			}
 		}
 
-		sort($distinctweights, SORT_NUMERIC);
-
-		$finalresults = array();
-		foreach($results as $result) {
-			$result->weightrank =  ((array_search($result->relativeweight, $distinctweights) + 1) / (count($distinctweights))) * 100;
-			$finalresults[] = $result;
-		}
-
-		return $finalresults;
+		return $dateclause;
 	}
 
 	function SortWeightedTagsAlphaAsc($x, $y) {
@@ -771,16 +802,29 @@ SQL;
 		return strcmp(strtolower($y->tag), strtolower($x->tag));
 	}
 
-	function GetDistinctTagCount() {
+	function GetDistinctTagCount($date_sensitive=false) {
 		global $wpdb, $tablepost2tag;
 
-		return $wpdb->get_var("select count(*) from $tablepost2tag p2t inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish'");
+		$sql = "select count(*) from $tablepost2tag p2t inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish'";
+
+		if ($date_sensitive) {
+			$sql .= " " . $this->GetDateSQL();
+		}
+		return $wpdb->get_var($sql);
 	}
 
-	function GetMostPopularTagCount() {
+	function GetMostPopularTagCount($date_sensitive = false) {
 		global $wpdb, $tabletags, $tablepost2tag;
 
-		return $wpdb->get_var("select count(p2t.post_id) cnt from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish' group by t.tag order by cnt desc limit 1");
+		$sql = "select count(p2t.post_id) cnt from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish'";
+
+		if ($date_sensitive) {
+			$sql .= " " . $this->GetDateSQL();
+		}
+
+		$sql .= " group by t.tag order by cnt desc limit 1";
+
+		return $wpdb->get_var($sql);
 	}
 
 
@@ -1067,6 +1111,7 @@ SQL;
 			$predefinedFormats["commalist"] = array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["commalisticons"] = array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["technoraticommalist"] = array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["technoraticommalistwithlabel"] = array ("default"=>", %technoratitag%", "first"=>"Technorati Tags: %technoratitag%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["gadabecommalist"] = array ("default"=>", %gadabetag%", "first"=>"%gadabetag%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["andcommalist"] = array ("default"=>", %taglink% %intersectionlink% %unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
 
