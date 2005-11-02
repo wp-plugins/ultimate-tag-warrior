@@ -415,11 +415,16 @@ SQL;
 		echo $this->FormatTags($this->GetTagsForPost($postID, $limit), $format);
 	}
 
-	function GetTagsForPost($postID, $limit = 0) {
+	function GetTagsForPost($post, $limit = 0) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
 		if ($limit != 0) {
 			$limitclause = "LIMIT $limit";
+		}
+
+		$postID = $post;
+		if (is_object($post)) {
+			$postID = $post->ID;
 		}
 
 		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";

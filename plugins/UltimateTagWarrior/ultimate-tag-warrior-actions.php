@@ -80,17 +80,17 @@ function utw_options() {
 
 
 
-	if ($_GET["action"] == "saveconfiguration") {
+	if ($_POST["action"] == "saveconfiguration") {
 		foreach($configValues as $setting) {
 			if ($setting['type'] == 'multiselect') {
 				$options = '|';
 
 				foreach($setting['options'] as $option) {
-					$options .= $_GET[$setting['setting'] . ":" . $option] . '|';
+					$options .= $_POST[$setting['setting'] . ":" . $option] . '|';
 				}
 				update_option($setting['setting'], $options);
 			} else if ($setting['type'] != 'label') {
-				update_option($setting['setting'], $_GET[$setting['setting']]);
+				update_option($setting['setting'], $_POST[$setting['setting']]);
 			}
 		}
 		echo "<div class=\"updated\"><p>Updated settings</p></div>";
@@ -98,7 +98,7 @@ function utw_options() {
 
 	echo "<fieldset class=\"options\"><legend>" . __("Help!", $lzndomain) . "</legend><a href=\"$siteurl/wp-content/plugins$install_directory/ultimate-tag-warrior-help.html\" target=\"_new\">" . __("Local help", $lzndomain) . "</a> | <a href=\"http://www.neato.co.nz/ultimate-tag-warrior\" target=\"_new\">" . __("Author help", $lzndomain) . "</a> | <a href=\"./edit.php?page=ultimate-tag-warrior-actions.php\">Manage Tags</a></fieldset>";
 	echo '<fieldset class="options"><legend>' . __('Configuration', $lzndomain) . '</legend>';
-	echo "<form action=\"$siteurl/wp-admin/options-general.php\" method=\"GET\">";
+	echo "<form method=\"POST\">";
 	echo "<table width=\"100%\">";
 
 	foreach($configValues as $setting) {
@@ -133,7 +133,6 @@ echo <<<CONFIGFOOTER
 		</form>
 	</fieldset>
 CONFIGFOOTER;
-
 }
 
 function ultimate_better_admin() {
