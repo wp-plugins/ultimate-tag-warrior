@@ -51,9 +51,13 @@ function handleResponse() {
 }
 
 function askYahooForKeywords() {
-	http.open('POST','<?= $ajaxurl ?>?action=requestKeywords');
-	http.onreadystatechange = listYahooKeywords;
-	http.send(escape(document.getElementById('content').value));
+	try {
+		http.open('POST','<?= $ajaxurl ?>?action=requestKeywords');
+		http.onreadystatechange = listYahooKeywords;
+		http.send(escape(document.getElementById('content').value));
+	} catch (ex) {
+		alert("Something done went wrong:" + ex);
+	}
 }
 
 function listYahooKeywords() {

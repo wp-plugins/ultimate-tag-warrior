@@ -14,6 +14,8 @@ $tag = $_REQUEST['tag'];
 $post = $_REQUEST['post'];
 $format = $_REQUEST['format'];
 
+$debug = get_option('utw_debug');
+
 switch($action) {
 	case 'del':
 		if ( $user_level > 3 ) {
@@ -57,7 +59,9 @@ switch($action) {
 
 
 	case 'requestKeywords':
-
+		if ($debug) {
+			echo "Requested keywords...<br />";
+		}
 
 		$noUnicode = preg_replace("/%u[0-9A-F]{4}/i","",$HTTP_RAW_POST_DATA);
 
@@ -74,6 +78,9 @@ switch($action) {
 		$xml = "";
 		$tagyu_url = 'http://' . $keywordAPISite . $keywordAPIUrl . $data;
 
+		if ($debug) {
+			echo "Send Request to Tagyu...<br />";
+		}
 		if ($bypost) {
 			$sock = fsockopen($keywordAPISite, 80, $errno, $errstr, 30);
 			if (!$sock) die("$errstr ($errno)\n");
@@ -125,6 +132,9 @@ switch($action) {
 			$xml = file_get_contents($tagyu_url);
 		} */
 
+		if ($debug) {
+		echo "Parse response...<br />";
+		}
 		$hasTags = false;
 		if (strpos($xml,'<error>') === FALSE) {
 			$loc = strpos($xml, "<tag>", 0);
@@ -157,6 +167,27 @@ switch($action) {
 	case 'editsynonyms':
 
 		echo '<input type="text" name="synonyms" value="' . $utw->FormatTags($utw->GetSynonymsForTag("", $tag), array("first"=>"%tag%", "default"=>", %tag%")) . '" />';
+		break;
+
+	case 'tagSearch':
+		$tagset = explode('|',$tag);
+
+		for ($i = 0; $i < count($tagset); $i++) {
+			if (trim($tagset[$i]) <> "") {
+				$taglist[] = "'" . trim($tagset[$i]) . "'";
+			}
+		}
+
+		if (count($taglist) > 0) {
+			$tags = $utw->GetTagsForTagString( implode(',',$taglist));
+
+			$posts = $utw->GetPostsForTags($tags);
+			echo "<h4>Matches for ";
+			echo $utw->FormatTags($tags, array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>' or %taglink%'));
+			echo "</h4>";
+			echo $utw->FormatPosts($posts, array('first'=>'<dl><dt>%postlink%</dt><dd>%excerpt%</dd>','default'=>'<dt>%postlink%</dt><dd>%excerpt%</dd>', 'last'=>'<dt>%postlink%</dt><dd>%excerpt%</dd></dl>'));
+		}
+
 		break;
 	}
 

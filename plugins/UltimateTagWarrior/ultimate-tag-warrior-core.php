@@ -427,8 +427,11 @@ SQL;
 			$postID = $post->ID;
 		}
 
-		$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
-		return($wpdb->get_results($q));
+
+		if ($postID) {
+			$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
+			return($wpdb->get_results($q));
+		}
 	}
 
 	function GetPostsForTag($tag) {
@@ -449,6 +452,34 @@ SQL;
 		  AND post_date_gmt < '$now'
 		  AND post_status = 'publish'
 		ORDER BY post_date desc
+SQL;
+
+		   return ($wpdb->get_results($q));
+	}
+
+	function GetPostsForTags($tags) {
+		global $tabletags, $tablepost2tag, $wpdb;
+
+		$taglist = "'" . $tags[0]->tag . "'";
+		$tagcount = count($tags);
+		if ($tagcount > 1) {
+			for ($i = 1; $i <= $tagcount; $i++) {
+				$taglist = $taglist . ", '" . urldecode($tags[$i]->tag) . "'";
+			}
+		}
+
+		$now = current_time('mysql', 1);
+
+		   $q = <<<SQL
+		SELECT *
+			 FROM $tablepost2tag p2t, $tabletags t, $wpdb->posts p
+			 WHERE p2t.tag_id = t.tag_id
+			 AND p2t.post_id = p.ID
+			 AND (t.tag IN ($taglist))
+			 AND post_date_gmt < '$now'
+			 AND post_status = 'publish'
+			 GROUP BY p2t.post_id
+			 ORDER BY t.tag ASC
 SQL;
 
 		   return ($wpdb->get_results($q));
@@ -573,7 +604,9 @@ SQL;
 			 GROUP BY p2t.post_id HAVING COUNT(p2t.post_id)=$tagcount
 			 ORDER BY t.tag ASC
 SQL;
+
 		$postids = $wpdb->get_results($q);
+
 		if ($postids) {
 
 			$postidlist = $postids[0]->post_id;
@@ -1001,13 +1034,13 @@ SQL;
 
 		$format = str_replace('%icons%', $iconformat, $format);
 
-		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%gadabeicon%', "<a href=\"http://$gada_tag_name.gada.be\"><img src=\"$siteurl/wp-content/plugins$install_directory/gadaicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%znifficon%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\" target=\"_blank\"><img src=\"$siteurl/wp-content/plugins$install_directory/znifficon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%rssicon%', "<a href=\"$rssurl\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%gadabeicon%', "<a href=\"http://$gada_tag_name.gada.be\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/gadaicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%znifficon%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\" ><img src=\"$siteurl/wp-content/plugins$install_directory/znifficon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
 		$format = str_replace('%intersectionurl%', $tagseturl, $format);
 		$format = str_replace('%unionurl%', $unionurl, $format);
@@ -1051,7 +1084,6 @@ SQL;
 	}
 
 	function FormatPosts($posts, $format) {
-
 		if (is_array($format) && $format["pre"]) {
 			$out .= $format["pre"];
 		}
@@ -1275,8 +1307,11 @@ function ultimate_get_posts() {
 	$wp_query->posts = $posts;
 	$wp_query->post_count = count($posts);
 	update_post_caches($posts);
-	if ($wp_query->post_count > 0)
+	if ($wp_query->post_count > 0) {
 		$wp_query->post = $wp_query->posts[0];
+		// Thanks Bill! http://www.copperleaf.org
+       $wp_query->is_404 = false;
+   }
 }
 
 ?>
