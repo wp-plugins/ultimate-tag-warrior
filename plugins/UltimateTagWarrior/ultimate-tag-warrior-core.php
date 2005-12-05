@@ -1005,6 +1005,16 @@ SQL;
 			$unionurl = "$home/index.php?tag=" . implode('|', $tagset) . "|$tag_name";
 		}
 
+		$format = str_replace('%icons%', $iconformat, $format);
+
+		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\" alt=\"Technorati tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\" alt=\"Flickr tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\" alt=\"del.icio.us tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\" alt=\"Wikipedia page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%gadabeicon%', "<a href=\"http://$gada_tag_name.gada.be\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/gadaicon.jpg\" border=\"0\" hspace=\"1\" alt=\"gada.be tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%znifficon%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\" ><img src=\"$siteurl/wp-content/plugins$install_directory/znifficon.jpg\" border=\"0\" hspace=\"1\" alt=\"Zniff tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" alt=\"RSS feed for %tagdisplay%\" border=\"0\" hspace=\"1\"/></a>", $format);
+
 		$format = str_replace('%tag%', $tag_name, $format);
 		$format = str_replace('%tagdisplay%', $tag_display, $format);
 		$format = str_replace('%tagcount%', $tag->count, $format);
@@ -1031,16 +1041,6 @@ SQL;
 		$format = str_replace('%gadabetag%', "<a href=\"http://$gada_tag_name.gada.be\" rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%znifftag%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\">$tag_display</a>", $format);
 		$format = str_replace('%rsstag%', "<a href=\"$rssurl\" rel=\"tag\">RSS</a>", $format);
-
-		$format = str_replace('%icons%', $iconformat, $format);
-
-		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%gadabeicon%', "<a href=\"http://$gada_tag_name.gada.be\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/gadaicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%znifficon%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\" ><img src=\"$siteurl/wp-content/plugins$install_directory/znifficon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
-		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
 
 		$format = str_replace('%intersectionurl%', $tagseturl, $format);
 		$format = str_replace('%unionurl%', $unionurl, $format);
@@ -1197,6 +1197,8 @@ CSS;
 			$predefinedFormats["sizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%\">%tagdisplay%</a> ");
 			$predefinedFormats["coloredsizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
 			$predefinedFormats["sizedcoloredtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
+
+			$predefinedFormats["invisiblecommalist"] = array ("pre"=>"<span style=\"display:none\">","default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain),'post'=>'</span>' );
 
 			// Thanks drac! http://lair.fierydragon.org/
 			$predefinedFormats["coloredsizedtagcloudwithcount"] = array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
