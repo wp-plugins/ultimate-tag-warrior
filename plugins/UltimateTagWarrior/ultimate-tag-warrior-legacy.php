@@ -175,7 +175,7 @@ function ultimate_show_related_tags($pre = "<li>", $post = "</li>", $notags="Non
 	$tabletags = $table_prefix . 'tags';
 	$tablepost2tag = $table_prefix . "post2tag";
 
-	$tags = $_GET["tag"];
+	$tags = get_query_var("tag");
 	$tagset = explode(" ", $tags);
 	$taglist = "'" . $tagset[0] . "'";
 	$tagcount = count($tagset);

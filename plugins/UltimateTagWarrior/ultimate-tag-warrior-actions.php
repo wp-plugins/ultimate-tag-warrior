@@ -25,13 +25,13 @@ function &ultimate_rewrite_rules(&$rules) {
 	if(get_option("utw_use_pretty_urls") == "yes") {
 		$baseurl = get_option("utw_base_url");
 
-		$rules[substr($baseurl, 1) . "?(.*)/feed/(feed|rdf|rss|rss2|atom)/?$"] = "index.php?tag=$1&feed=$2";
+		$rules[substr($baseurl, 1) . "?(.*)/feed/(feed|rdf|rss|rss2|atom)/?$"] = "index.php?tag=\$matches[1]&feed=\$matches[2]";
 
-		$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)/$"] = "index.php?tag=$1&paged=$2";
-		$rules[substr($baseurl, 1) . "?(.*)/$"] = "index.php?tag=$1";
+		$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)/$"] = "index.php?tag=\$matches[1]&paged=\$matches[2]";
+		$rules[substr($baseurl, 1) . "?(.*)/$"] = "index.php?tag=\$matches[1]";
 
-		$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)$"] = "index.php?tag=$1&paged=$2";
-		$rules[substr($baseurl, 1) . "?(.*)$"] = "index.php?tag=$1";
+		$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)$"] = "index.php?tag=\$matches[1]&paged=\$matches[2]";
+		$rules[substr($baseurl, 1) . "?(.*)$"] = "index.php?tag=\$matches[1]";
 	}
 	return $rules;
 }
@@ -401,7 +401,7 @@ function ultimate_tag_templates() {
 	if ($_GET["archive"] == "tag") {
 		include(TEMPLATEPATH . '/tag_all.php');
 		exit;
-	} else 	if ($_GET["tag"] != "") {
+	} else 	if (get_query_var("tag") != "") {
 		ultimate_get_posts();
 		if (file_exists(TEMPLATEPATH . "/tag.php")) {
 			if ( isset($_GET['feed']) || $_GET["feed"] == '') {
@@ -584,7 +584,7 @@ function ultimate_add_ajax_javascript() {
 }
 
 function ultimate_posts_join($join) {
-	if ($_GET["tag"] != "") {
+	if (get_query_var("tag") != "") {
 		global $table_prefix, $wpdb;
 
 		$tabletags = $table_prefix . "tags";
@@ -597,13 +597,13 @@ function ultimate_posts_join($join) {
 
 function ultimate_posts_where($where) {
 	global $utw;
-	if ($_GET["tag"] != "") {
+	if (get_query_var("tag") != "") {
 		global $table_prefix, $wpdb;
 
 		$tabletags = $table_prefix . "tags";
 		$tablepost2tag = $table_prefix . "post2tag";
 
-		$tags = $_GET["tag"];
+		$tags = get_query_var("tag");
 
 		$tagset = explode(" ", $tags);
 
@@ -626,8 +626,8 @@ function ultimate_posts_where($where) {
 /* Maaaaaybe some day...
 
 function ultimate_posts_having () {
-	if ($_GET["tag"] != "") {
-		$tags = $_GET["tag"];
+	if (get_query_var("tag") != "") {
+		$tags = get_query_var("tag");
 		$tagset = explode(" ", $tags);
 		$taglist = "'" . $tagset[0] . "'";
 		$tagcount = count($tagset);

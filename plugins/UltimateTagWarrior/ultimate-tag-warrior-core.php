@@ -322,7 +322,7 @@ SQL;
 	}
 
 	function GetCurrentTagSet() {
-		$tags = $_GET["tag"];
+		$tags = get_query_var("tag");
 		$tagset = explode(" ", $tags);
 
 		if (count($tagset) == 1) {
@@ -931,7 +931,7 @@ SQL;
 
 		$prettyurls = get_option('utw_use_pretty_urls');
 		$tagset = array();
-		$tags = $_GET["tag"];
+		$tags = get_query_var("tag");
 
 		$type = "none";
 
@@ -1269,7 +1269,7 @@ CSS;
 
 
 /* ultimate_get_posts()
-Retrieves the posts for the tags specified in $_GET["tag"].  Gets the intersection when there are multiple tags.
+Retrieves the posts for the tags specified in get_query_var("tag").  Gets the intersection when there are multiple tags.
 */
 function ultimate_get_posts() {
 	global $wpdb, $table_prefix, $posts, $table_prefix, $tableposts, $id, $wp_query, $request, $utw;
@@ -1278,7 +1278,7 @@ function ultimate_get_posts() {
 
 	$or_query = false;
 
-	$tags = $_GET["tag"];
+	$tags = get_query_var("tag");
 
 	$tagset = explode(" ", $tags);
 
