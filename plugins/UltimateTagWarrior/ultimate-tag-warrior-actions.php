@@ -623,6 +623,12 @@ function ultimate_posts_where($where) {
 	return $where;
 }
 
+function ultimate_query_vars($vars) {
+	$vars[] = 'tag';
+
+	return $vars;
+}
+
 /* Maaaaaybe some day...
 
 function ultimate_posts_having () {
@@ -662,6 +668,7 @@ add_filter('posts_where', array('UltimateTagWarriorActions','ultimate_posts_wher
 
 // URL rewriting
 add_filter('rewrite_rules_array', array('UltimateTagWarriorActions','ultimate_rewrite_rules'));
+add_filter('query_vars', array('UltimateTagWarriorActions','ultimate_query_vars'));
 
 add_filter('the_content', array('UltimateTagWarriorActions', 'ultimate_the_content_filter'));
 add_filter('the_category_rss', array('UltimateTagWarriorActions', 'ultimate_add_tags_to_rss'));
