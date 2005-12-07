@@ -530,9 +530,13 @@ JAVASCRIPT;
 function ultimate_the_content_filter($thecontent='') {
 	global $post, $utw, $lzndomain;
 
-	$tags = null;
+	$tags = $utw->GetTagsForPost($post->ID);
+
+	if (count($tags) == 0 && $post->post_status == 'static') {
+		return $thecontent;
+	}
+
 	if (get_option('utw_include_local_links') == 'yes') {
-		$tags = $utw->GetTagsForPost($post->ID);
 
 		if (get_option('utw_primary_automagically_included_link_format') != '') {
 			$thecontent = $thecontent . $utw->FormatTags($tags, $utw->GetFormatForType(get_option('utw_primary_automagically_included_link_format')));
@@ -542,18 +546,14 @@ function ultimate_the_content_filter($thecontent='') {
 	}
 
 	if (get_option('utw_include_technorati_links') == 'yes') {
-		if ($tags == null) $tags = $utw->GetTagsForPost($post->ID);
-
 		if (get_option('utw_secondary_automagically_included_link_format') != '') {
 			$thecontent = $thecontent . $utw->FormatTags($tags, $utw->GetFormatForType(get_option('utw_secondary_automagically_included_link_format')));
 		} else {
-			$thecontent = $thecontent . $utw->FormatTags($tags, array("first"=>__("<span class=\"technoratitags\">Technorati Tags", $lzndomain) . ": %technoratitag% ", "default"=>"%technoratitag% ", "last"=>"%technoratitag%</span>","none"=>""));
+			$thecontent = $thecontent . $utw->FormatTags($tags, array("pre"=>__("<span class=\"technoratitags\">Technorati Tags", $lzndomain) . ": ","default"=>"%technoratitag% ", "last"=>"%technoratitag%","none"=>"","post"=>"</span>"));
 		}
 	}
 
 	if (is_feed() && get_option('utw_append_tag_links_to_feed')) {
-		if ($tags == null) $tags = $utw->GetTagsForPost($post->ID);
-
 		$thecontent = $thecontent . $utw->FormatTags($tags, $utw->GetFormatForType('commalist'));
 	}
 
@@ -656,6 +656,7 @@ add_action('edit_form_advanced', array('UltimateTagWarriorActions','ultimate_dis
 add_action('publish_post', array('UltimateTagWarriorActions','ultimate_save_tags'));
 add_action('edit_post', array('UltimateTagWarriorActions','ultimate_save_tags'));
 add_action('save_post', array('UltimateTagWarriorActions','ultimate_save_tags'));
+add_action('wp_insert_post', array('UltimateTagWarriorActions','ultimate_save_tags'));
 
 add_action('delete_post', array('UltimateTagWarriorActions', 'ultimate_delete_post'));
 

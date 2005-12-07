@@ -1128,7 +1128,7 @@ SQL;
 	var $predefinedFormats = array();
 
 	function GetFormatForType($formattype) {
-		global $user_level, $post, $lzndomain, $predefinedFormats;
+		global $user_level, $post, $lzndomain, $predefinedFormats, $install_directory;
 
 		if ($post->ID) {
 			$postid = $post->ID;
@@ -1137,6 +1137,8 @@ SQL;
 		}
 
 		if (count($predefinedFormats) == 0) {
+			$siteurl = get_option('siteurl');
+
 			$predefinedFormats["tagsetsimplelist"] = array('first'=>'%taglink%', 'default'=>' %operatortext% %taglink%');
 			$predefinedFormats["tagsetcommalist"] = array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>' %operatortext% %taglink%');
 			$predefinedFormats["simplelist"] = array ("default"=>"%taglink% ", "none"=>__("No Tags", $lzndomain) );
@@ -1148,6 +1150,7 @@ SQL;
 			$predefinedFormats["commalisticons"] = array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["technoraticommalist"] = array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["technoraticommalistwithlabel"] = array ("default"=>", %technoratitag%", "first"=>"Technorati Tags: %technoratitag%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["technoraticommalistwithiconlabel"] = array ("default"=>", %technoratitag%", "first"=>"<a href=\"http://www.technorati.com/tag/\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a> %technoratitag%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["gadabecommalist"] = array ("default"=>", %gadabetag%", "first"=>"%gadabetag%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["andcommalist"] = array ("default"=>", %taglink% %intersectionlink% %unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
 

@@ -13,18 +13,18 @@ function createRequestObject() {
 var http = createRequestObject();
 
 function sndReq(action, tag, post, format) {
-    http.open('get', '<?= $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
+    http.open('get', '<?php echo $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
     http.onreadystatechange = handleResponse;
     http.send(null);
 }
 
 function sndReqNoResp(action, tag, post) {
-    http.open('get', '<?= $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post);
+    http.open('get', '<?php echo $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post);
     http.send(null);
 }
 
 function sndReqGenResp(action, tag, post, format) {
-    http.open('get', '<?= $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
+    http.open('get', '<?php echo $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
     http.onreadystatechange = handleResponseGeneric;
     http.send(null);
 }
@@ -52,7 +52,7 @@ function handleResponse() {
 
 function askYahooForKeywords() {
 	try {
-		http.open('POST','<?= $ajaxurl ?>?action=requestKeywords');
+		http.open('POST','<?php echo $ajaxurl ?>?action=requestKeywords');
 		http.onreadystatechange = listYahooKeywords;
 		http.send(escape(document.getElementById('content').value));
 	} catch (ex) {
