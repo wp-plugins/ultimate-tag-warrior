@@ -10,8 +10,10 @@ class UltimateTagWarriorCore {
 
 	/* Comparing x.y.z versions is more effort than I'm prepared
 	   to go to.  '*/
-	function CheckForInstall() {
+	function CheckForInstall($hideerrors = true) {
 		global $current_build, $wpdb, $tabletags, $tablepost2tag, $tabletag_synonyms;
+
+		$wpdb->show_errors = !$hideerrors;
 
 		$installed_build = get_option('utw_installed_build');
 		if ($installed_build == '') $installed_build = 0;
@@ -113,7 +115,7 @@ SQL;
 
 	function ForceInstall() {
 		update_option('utw_installed_build', 0);
-		$this->CheckForInstall();
+		$this->CheckForInstall(false);
 	}
 
 	/* Fundamental functions for dealing with tags */
@@ -672,7 +674,7 @@ SQL;
 			 AND post_status = 'publish'
 			 $notclause
 			 GROUP BY p2t.post_id
-			 ORDER BY cnt desc
+			 ORDER BY cnt DESC, post_date_gmt DESC
 			 $limitclause
 SQL;
 
@@ -919,6 +921,7 @@ SQL;
 		$tag_display = str_replace('_',' ', $tag->tag);
 		$tag_display = str_replace('-',' ',$tag_display);
 		$tag_name = strtolower($tag->tag);
+		$tag_name_url = urlencode($tag_name);
 
 		$trati_tag_name = str_replace(' ', '+', $tag_display);
 		$flickr_tag_name = str_replace(' ', '', $tag_display);
@@ -992,28 +995,41 @@ SQL;
 
 		// This feels so... dirty.
 		if ($prettyurls == "yes") {
-			$format = str_replace('%tagurl%', "$home$baseurl$tag_name$trailing", $format);
-			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name$trailing\" rel=\"tag\">$tag_display</a>", $format);
-			$rssurl = "$home$baseurl$tag_name/feed/rss2";
-			$tagseturl = "$home$baseurl" . implode('+', $tagset) . 	"+$tag_name$trailing";
-			$unionurl = "$home$baseurl" . implode('|', $tagset) . 	"|$tag_name$trailing";
+			$format = str_replace('%tagurl%', "$home$baseurl$tag_name_url$trailing", $format);
+			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name_url$trailing\" rel=\"tag\">$tag_display</a>", $format);
+			$rssurl = "$home$baseurl$tag_name_url/feed/rss2";
+			$tagseturl = "$home$baseurl" . implode('+', $tagset) . 	"+$tag_name_url$trailing";
+			$unionurl = "$home$baseurl" . implode('|', $tagset) . 	"|$tag_name_url$trailing";
+
+			$tagpageurl =  "$home$baseurl" . implode('+', $tagset);
+			$tagpageunionurl =  "$home$baseurl" . implode('-', $tagset);
+
+			if($trailing == '') {
+				$tagsetfeedsuffix = '/feed/rss2';
+			} else {
+				$tagsetfeedsuffix = 'feed/rss2';
+			}
 		} else {
-			$format = str_replace('%tagurl%', "$home/index.php?tag=$tag_name", $format);
-			$format = str_replace('%taglink%', "<a href=\"$home/index.php?tag=$tag_name\" rel=\"tag\">$tag_display</a>", $format);
-			$rssurl = "$home/index.php?tag=$tag_name&feed=rss2";
-			$tagseturl = "$home/index.php?tag=" . implode('+', $tagset) . "+$tag_name";
-			$unionurl = "$home/index.php?tag=" . implode('|', $tagset) . "|$tag_name";
+			$format = str_replace('%tagurl%', "$home/index.php?tag=$tag_name_url", $format);
+			$format = str_replace('%taglink%', "<a href=\"$home/index.php?tag=$tag_name_url\" rel=\"tag\">$tag_display</a>", $format);
+			$rssurl = "$home/index.php?tag=$tag_name_url&feed=rss2";
+			$tagseturl = "$home/index.php?tag=" . implode('+', $tagset) . "+$tag_name_url";
+			$unionurl = "$home/index.php?tag=" . implode('|', $tagset) . "|$tag_name_url";
+
+			$tagpageurl =  "$home/index.php?tag=" . implode('+', $tagset);
+			$tagpageunionurl =  "$home/index.php?tag=" . implode('-', $tagset);
+			$tagsetfeedsuffix = '&feed=rss2';
 		}
 
 		$format = str_replace('%icons%', $iconformat, $format);
 
-		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\" alt=\"Technorati tag page for %tagdisplay%\"/></a>", $format);
-		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" border=\"0\" hspace=\"1\" alt=\"Flickr tag page for %tagdisplay%\"/></a>", $format);
-		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" border=\"0\" hspace=\"1\" alt=\"del.icio.us tag page for %tagdisplay%\"/></a>", $format);
-		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" border=\"0\" hspace=\"1\" alt=\"Wikipedia page for %tagdisplay%\"/></a>", $format);
-		$format = str_replace('%gadabeicon%', "<a href=\"http://$gada_tag_name.gada.be\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/gadaicon.jpg\" border=\"0\" hspace=\"1\" alt=\"gada.be tag page for %tagdisplay%\"/></a>", $format);
-		$format = str_replace('%znifficon%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\" ><img src=\"$siteurl/wp-content/plugins$install_directory/znifficon.jpg\" border=\"0\" hspace=\"1\" alt=\"Zniff tag page for %tagdisplay%\"/></a>", $format);
-		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" alt=\"RSS feed for %tagdisplay%\" border=\"0\" hspace=\"1\"/></a>", $format);
+		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" alt=\"Technorati tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" alt=\"Flickr tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%deliciousicon%', "<a href=\"http://del.icio.us/tag/$tag_name_url\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/deliciousicon.jpg\" alt=\"del.icio.us tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%wikipediaicon%', "<a href=\"http://en.wikipedia.org/wiki/$wiki_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/wikiicon.jpg\" alt=\"Wikipedia page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%gadabeicon%', "<a href=\"http://$gada_tag_name.gada.be\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/gadaicon.jpg\" alt=\"gada.be tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%znifficon%', "<a href=\"http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=\"rel=\"tag\" ><img src=\"$siteurl/wp-content/plugins$install_directory/znifficon.jpg\" alt=\"Zniff tag page for %tagdisplay%\"/></a>", $format);
+		$format = str_replace('%rssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" alt=\"RSS feed for %tagdisplay%\" /></a>", $format);
 
 		$format = str_replace('%tag%', $tag_name, $format);
 		$format = str_replace('%tagdisplay%', $tag_display, $format);
@@ -1046,16 +1062,18 @@ SQL;
 		$format = str_replace('%unionurl%', $unionurl, $format);
 
 		if ($type == "and" || $type == "single") {
-			$format = str_replace('%intersectionicon%', "<a href=\"$tagseturl\"><img src=\"$siteurl/wp-content/plugins$install_directory/intersectionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+			$format = str_replace('%intersectionicon%', "<a href=\"$tagseturl\"><img src=\"$siteurl/wp-content/plugins$install_directory/intersectionicon.jpg\" /></a>", $format);
 			$format = str_replace('%intersectionlink%', "<a href=\"$tagseturl\">+</a>", $format);
+			$format = str_replace('%tagsetrssicon%', "<a href=\"$tagpageurl$tagsetfeedsuffix\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" alt=\"RSS feed for current tagset\" /></a>", $format);
 		} else {
 			$format = str_replace('%intersectionicon%','',$format);
 			$format = str_replace('%intersectionlink%','',$format);
 		}
 
 		if ($type == "or" || $type == "single") {
-			$format = str_replace('%unionicon%', "<a href=\"$unionurl\"><img src=\"$siteurl/wp-content/plugins$install_directory/unionicon.jpg\" border=\"0\" hspace=\"1\"/></a>", $format);
+			$format = str_replace('%unionicon%', "<a href=\"$unionurl\"><img src=\"$siteurl/wp-content/plugins$install_directory/unionicon.jpg\" /></a>", $format);
 			$format = str_replace('%unionlink%', "<a href=\"$unionurl\">|</a>", $format);
+			$format = str_replace('%tagsetrssicon%', "<a href=\"$tagpageunionurl$tagsetfeedsuffix\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" alt=\"RSS feed for current tagset\" /></a>", $format);
 
 		} else {
 			$format = str_replace('%unionicon%','',$format);
@@ -1071,8 +1089,8 @@ SQL;
 		} else {
 			$format = str_replace('%operatortext%', '',$format);
 			$format = str_replace('%operatorsymbol%', '',$format);
+			$format = str_replace('%tagsetrssicon%', "<a href=\"$rssurl\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/rssicon.jpg\" alt=\"RSS feed for %tagdisplay%\" /></a>",$format);
 		}
-
 
 
 		if ($post->ID) {
@@ -1121,11 +1139,31 @@ SQL;
 		$format = str_replace('%title%', $post->post_title, $format);
 		$format = str_replace('%postlink%', "<a href=\"$url\">$post->post_title</a>", $format);
 		$format = str_replace('%excerpt%', $post->post_excerpt, $format);
+		$format = str_replace('%postdate%',mysql2date(get_settings("date_format"), $post->post_date),$format);
 
 		return $format;
 	}
 
 	var $predefinedFormats = array();
+
+	function GetFormat($namedType, $additionalFormatting) {
+		$baseFormat = $this->GetFormatForType($namedType);
+
+		if ('' != $additionalFormatting) {
+			if (is_array($additionalFormatting)) {
+				foreach($additionalFormatting as $format=>$value) {
+					$baseFormat[$format] = $value;
+				}
+			} else {
+				if (is_array($baseFormat)) {
+					$baseFormat['default'] = $additionalFormatting;
+				} else {
+					$baseFormat = $additionalFormatting;
+				}
+			}
+		}
+		return $baseFormat;
+	}
 
 	function GetFormatForType($formattype) {
 		global $user_level, $post, $lzndomain, $predefinedFormats, $install_directory;
@@ -1147,10 +1185,11 @@ SQL;
 			$predefinedFormats["htmllisticons"] = array ("default"=>"<li>%icons%%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
 			$predefinedFormats["htmllistandor"] = array ("default"=>"<li>%taglink% %intersectionlink% %unionlink%</li>","none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
 			$predefinedFormats["commalist"] = array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["commalistwithtaglabel"] = array ("single"=>"Tag:  %taglink%", "default"=>", %taglink%", "first"=>"Tags: %taglink%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["commalisticons"] = array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["technoraticommalist"] = array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["technoraticommalistwithlabel"] = array ("default"=>", %technoratitag%", "first"=>"Technorati Tags: %technoratitag%", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["technoraticommalistwithiconlabel"] = array ("default"=>", %technoratitag%", "first"=>"<a href=\"http://www.technorati.com/tag/\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" border=\"0\" hspace=\"1\"/></a> %technoratitag%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["technoraticommalistwithiconlabel"] = array ("default"=>", %technoratitag%", "first"=>"<a href=\"http://www.technorati.com/tag/\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" alt=\"Technorati\"/></a> %technoratitag%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["gadabecommalist"] = array ("default"=>", %gadabetag%", "first"=>"%gadabetag%", "none"=>__("No Tags", $lzndomain) );
 			$predefinedFormats["andcommalist"] = array ("default"=>", %taglink% %intersectionlink% %unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
 
