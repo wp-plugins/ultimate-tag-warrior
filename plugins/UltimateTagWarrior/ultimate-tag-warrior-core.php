@@ -173,7 +173,7 @@ SQL;
 		$tag = trim($tag);
 
 		if ($tag <> "") {
-			$tag = str_replace(' ', '_', $tag);
+			$tag = str_replace(' ', '-', $tag);
 
 			$tag = $this->GetCanonicalTag($tag);
 
