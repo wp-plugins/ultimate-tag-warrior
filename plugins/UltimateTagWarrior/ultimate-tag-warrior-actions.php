@@ -506,7 +506,7 @@ function ultimate_display_tag_widget() {
 
 	$widget .="<textarea name=\"tagset\" rows=\"5\" cols=\"15\">";
 	if ($post) {
-	$widget .= str_replace('&', '&amp;', $utw->FormatTags($utw->GetTagsForPost($postid, $limit), array("first"=>'%tag%', 'default'=>', %tag%')));
+		$widget .= str_replace('&', '&amp;', $utw->FormatTags($utw->GetTagsForPost($postid, $limit), array("first"=>'%tag%', 'default'=>', %tag%')));
 	}
 	$widget .="</textarea><br />";
 
@@ -548,9 +548,17 @@ function ultimate_the_content_filter($thecontent='') {
 		return $thecontent;
 	}
 
-	if (get_option('utw_include_local_links') != 'No') {
+	if (get_option('utw_include_local_links') != 'No' && get_option('utw_include_local_links') != 'no' ) {
 		if (get_option('utw_primary_automagically_included_link_format') != '') {
-			$format = $utw->GetFormat(get_option('utw_primary_automagically_included_link_format'), array('pre'=>get_option('utw_primary_automagically_included_prefix'), 'post'=>get_option('utw_primary_automagically_included_suffix')));
+			$custom = array();
+			if (get_option('utw_primary_automagically_included_prefix') != '') {
+				$custom['pre'] = stripslashes(get_option('utw_primary_automagically_included_prefix'));
+			}
+			if (get_option('utw_primary_automagically_included_suffix') != '') {
+				$custom['post'] = stripslashes(get_option('utw_primary_automagically_included_suffix'));
+			}
+
+			$format = $utw->GetFormat(get_option('utw_primary_automagically_included_link_format'), $custom);
 			$tagHTML = $utw->FormatTags($tags, $format);
 
 			if (get_option('utw_include_local_links') == 'Before Content') {
@@ -558,15 +566,24 @@ function ultimate_the_content_filter($thecontent='') {
 			} else {
 				$thecontent = $thecontent . $tagHTML;
 			}
+
 		} else {
 			// This is a throwback to when the format wasn't specified.
 			$thecontent = $thecontent . $utw->FormatTags($tags, array("first"=>"<span class=\"localtags\">%taglink% ","default"=>"%taglink% ", "last"=>"%taglink%</span>"));
 		}
 	}
 
-	if (get_option('utw_include_technorati_links') != 'No') {
+	if (get_option('utw_include_technorati_links') != 'No' && get_option('utw_include_technorati_links') != 'no') {
 		if (get_option('utw_secondary_automagically_included_link_format') != '') {
-			$format = $utw->GetFormat(get_option('utw_secondary_automagically_included_link_format'), array('pre'=>get_option('utw_secondary_automagically_included_prefix'), 'post'=>get_option('utw_secondary_automagically_included_suffix')));
+			$custom = array();
+			if (get_option('utw_secondary_automagically_included_prefix') != '') {
+				$custom['pre'] = stripslashes(get_option('utw_secondary_automagically_included_prefix'));
+			}
+			if (get_option('utw_secondary_automagically_included_suffix') != '') {
+				$custom['post'] = stripslashes(get_option('utw_secondary_automagically_included_suffix'));
+			}
+
+			$format = $utw->GetFormat(get_option('utw_secondary_automagically_included_link_format'), $custom);
 			$tagHTML = $utw->FormatTags($tags, $format);
 
 			if (get_option('utw_include_technorati_links') == 'Before Content') {

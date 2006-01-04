@@ -129,7 +129,7 @@ SQL;
 		foreach($tags as $tag) {
 			if ($tag <> "") {
 				$tag = trim($tag);
-				$tag = str_replace(' ', '_', $tag);
+				$tag = str_replace(' ', '-', $tag);
 
 				$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 				$tagid = $wpdb->get_var($q);
