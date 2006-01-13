@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: UTW2:  Like UTW1,  but with even greater justice.  Allows tagging posts in a non-external-system dependent way;  with a righteous data structure for advanced tagging-mayhem.
-Version: 2.9.1
+Version: 2.9.2
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -117,9 +117,9 @@ function UTW_AddTagToCurrentPost($format="", $minimumuserlevel = 3) {
 
 	$postid = $post->ID;
 	if ($format=="") {
-	?><input type="text" size="9" id="soloAddTag-<?= $postid ?>" /> <input type="button" value="+" onClick="sndReqNoResp('add', document.getElementById('soloAddTag-<?= $postid ?>').value, '<?= $postid ?>')" /><?
+	?><input type="text" size="9" id="soloAddTag-<?php echo $postid ?>" /> <input type="button" value="+" onClick="sndReqNoResp('add', document.getElementById('soloAddTag-<?php echo  $postid ?>').value, '<?php echo  $postid ?>')" /><?php
 	} else {
-	?><input type="text" size="9" id="soloAddTag-<?= $postid ?>" /> <input type="button" value="+" onClick="sndReq('add', document.getElementById('soloAddTag-<?= $postid ?>').value, '<?= $postid ?>', '<?= $format ?>')" /><?
+	?><input type="text" size="9" id="soloAddTag-<?php echo $postid ?>" /> <input type="button" value="+" onClick="sndReq('add', document.getElementById('soloAddTag-<?php echo  $postid ?>').value, '<?php echo  $postid ?>', '<?php echo  $format ?>')" /><?php
 	}
 }
 ?>

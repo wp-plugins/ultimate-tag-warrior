@@ -21,17 +21,20 @@ class UltimateTagWarriorActions {
 /* ultimate_rewrite_rules
 
 */
-function &ultimate_rewrite_rules(&$rules) {
+function ultimate_rewrite_rules($rules) {
 	if(get_option("utw_use_pretty_urls") == "yes") {
 		$baseurl = get_option("utw_base_url");
 
-		$rules[substr($baseurl, 1) . "?(.*)/feed/(feed|rdf|rss|rss2|atom)/?$"] = "index.php?tag=\$matches[1]&feed=\$matches[2]";
+		global $wp_rewrite;
 
-		$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)/$"] = "index.php?tag=\$matches[1]&paged=\$matches[2]";
-		$rules[substr($baseurl, 1) . "?(.*)/$"] = "index.php?tag=\$matches[1]";
+		$tagbase = substr($baseurl, 1, strlen($baseurl) - 2);
 
-		$rules[substr($baseurl, 1) . "?(.*)/page/?(.*)$"] = "index.php?tag=\$matches[1]&paged=\$matches[2]";
-		$rules[substr($baseurl, 1) . "?(.*)$"] = "index.php?tag=\$matches[1]";
+		$wp_rewrite->add_rewrite_tag('%tag%', '(.*)', 'tag=');
+
+		// without trailing slash
+		$rules += $wp_rewrite->generate_rewrite_rules($baseurl . '%tag%');
+		// with trailing slash
+		$rules += $wp_rewrite->generate_rewrite_rules($baseurl . '%tag%/');
 	}
 	return $rules;
 }
@@ -504,11 +507,11 @@ function ultimate_display_tag_widget() {
     }
   }
 
-	$widget .="<textarea name=\"tagset\" rows=\"5\" cols=\"15\">";
+	$widget .="<input name=\"tagset\" value=\"";
 	if ($post) {
-		$widget .= str_replace('&', '&amp;', $utw->FormatTags($utw->GetTagsForPost($postid, $limit), array("first"=>'%tag%', 'default'=>', %tag%')));
+		$widget .= stripslashes(str_replace('&', '&amp;', $utw->FormatTags($utw->GetTagsForPost($postid, $limit), array("first"=>'%tag%', 'default'=>', %tag%'))));
 	}
-	$widget .="</textarea><br />";
+	$widget .="\" size=\"100\"><br />";
 
 	$widgetToUse = get_option('utw_always_show_links_on_edit_screen');
 
@@ -517,7 +520,7 @@ function ultimate_display_tag_widget() {
 		$widget .="Add existing tag: ";
 		if ($widgetToUse=='tag list') {
 
-			$format = "<a href=\"javascript:addTag(\\'%tag%\\')\">%tagdisplay%</a> ";
+			$format = "<a href=\"javascript:addTag('%tagjsescaped%')\">%tagdisplay%</a> ";
 			$widget .= $utw->FormatTags($utw->GetPopularTags(-1, 'tag', 'asc'), $format);
 
 		} else {
@@ -533,8 +536,9 @@ function ultimate_display_tag_widget() {
   $suggestions .='<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions"/>';
   $suggestions .='<div id="suggestedTags"></div></div>';
 
-  echo '<script>addToEditPage("grabit","Tags", \'' . $widget . '\');</script>';
-  echo '<script>addToEditPage("grabit","Tag Suggestions", \'' . $suggestions . '\');</script>';
+  echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tags (comma separated list)</h3><div class="dbx-content">' . $widget . '</div></fieldset>';
+  echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tag Suggestions (Courtesy of <a href="http://www.tagyu.com">Tagyu</a>)</h3><div class="dbx-content">' . $suggestions . '</div></fieldset>';
+
 
 }
 

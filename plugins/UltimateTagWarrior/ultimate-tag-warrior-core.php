@@ -127,9 +127,14 @@ SQL;
 		$tags = array_flip(array_flip($tags));
 
 		foreach($tags as $tag) {
+			$tag = trim($tag);
+
 			if ($tag <> "") {
-				$tag = trim($tag);
 				$tag = str_replace(' ', '-', $tag);
+
+				$tag = $this->GetCanonicalTag($tag);
+
+				echo $tag;
 
 				$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 				$tagid = $wpdb->get_var($q);
@@ -184,6 +189,9 @@ SQL;
 				$q = "INSERT INTO $tabletags (tag) VALUES ('$tag')";
 				$wpdb->query($q);
 				$tagid = $wpdb->insert_id;
+
+				echo $q;
+				echo $wpdb->last_query;
 			}
 
 			$q = "SELECT rel_id FROM $tablepost2tag WHERE post_id = '$postID' AND tag_id = '$tagid'";
@@ -920,8 +928,9 @@ SQL;
 
 		$tag_display = str_replace('_',' ', $tag->tag);
 		$tag_display = str_replace('-',' ',$tag_display);
+		$tag_display = stripslashes($tag_display);
 		$tag_name = strtolower($tag->tag);
-		$tag_name_url = urlencode($tag_name);
+		$tag_name_url = urlencode(stripslashes($tag_name));
 
 		$trati_tag_name = str_replace(' ', '+', $tag_display);
 		$flickr_tag_name = str_replace(' ', '', $tag_display);
@@ -995,14 +1004,16 @@ SQL;
 
 		// This feels so... dirty.
 		if ($prettyurls == "yes") {
+
 			$format = str_replace('%tagurl%', "$home$baseurl$tag_name_url$trailing", $format);
 			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name_url$trailing\" rel=\"tag\">$tag_display</a>", $format);
+
 			$rssurl = "$home$baseurl$tag_name_url/feed/rss2";
 			$tagseturl = "$home$baseurl" . implode('+', $tagset) . 	"+$tag_name_url$trailing";
 			$unionurl = "$home$baseurl" . implode('|', $tagset) . 	"|$tag_name_url$trailing";
 
 			$tagpageurl =  "$home$baseurl" . implode('+', $tagset);
-			$tagpageunionurl =  "$home$baseurl" . implode('-', $tagset);
+			$tagpageunionurl =  "$home$baseurl" . implode('|', $tagset);
 
 			if($trailing == '') {
 				$tagsetfeedsuffix = '/feed/rss2';
@@ -1017,11 +1028,18 @@ SQL;
 			$unionurl = "$home/index.php?tag=" . implode('|', $tagset) . "|$tag_name_url";
 
 			$tagpageurl =  "$home/index.php?tag=" . implode('+', $tagset);
-			$tagpageunionurl =  "$home/index.php?tag=" . implode('-', $tagset);
+			$tagpageunionurl =  "$home/index.php?tag=" . implode('|', $tagset);
 			$tagsetfeedsuffix = '&feed=rss2';
 		}
 
 		$format = str_replace('%icons%', $iconformat, $format);
+
+		$format = str_replace('%technoratiurl%', "http://www.technorati.com/tag/$trati_tag_name", $format);
+		$format = str_replace('%flickrurl%', "http://www.flickr.com/photos/tags/$flickr_tag_name", $format);
+		$format = str_replace('%deliciousurl%', "http://del.icio.us/tag/$tag_name_url", $format);
+		$format = str_replace('%wikipediaurl%', "http://en.wikipedia.org/wiki/$wiki_tag_name", $format);
+		$format = str_replace('%gadabeurl%', "http://$gada_tag_name.gada.be", $format);
+		$format = str_replace('%zniffurl%', "http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=", $format);
 
 		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" alt=\"Technorati tag page for %tagdisplay%\"/></a>", $format);
 		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" alt=\"Flickr tag page for %tagdisplay%\"/></a>", $format);
@@ -1033,6 +1051,8 @@ SQL;
 
 		$format = str_replace('%tag%', $tag_name, $format);
 		$format = str_replace('%tagdisplay%', $tag_display, $format);
+		$format = str_replace('%tagjsescaped%', str_replace("\'","\\'", $tag_name), $format);
+
 		$format = str_replace('%tagcount%', $tag->count, $format);
 
 		$format = str_replace('%tagweight%', $tag->weight, $format);
@@ -1136,10 +1156,12 @@ SQL;
 	function FormatPost($post, $format) {
 		$url = get_permalink($post->ID);
 
+		setup_postdata($post);
 		$format = str_replace('%title%', $post->post_title, $format);
 		$format = str_replace('%postlink%', "<a href=\"$url\">$post->post_title</a>", $format);
 		$format = str_replace('%excerpt%', $post->post_excerpt, $format);
 		$format = str_replace('%postdate%',mysql2date(get_settings("date_format"), $post->post_date),$format);
+		$format = str_replace('%content%', $post->post_content, $format);
 
 		return $format;
 	}
@@ -1333,14 +1355,14 @@ function ultimate_get_posts() {
 
 	$tags = array();
 	foreach($tagset as $tag) {
-		$tags[] = "'" . $utw->GetCanonicalTag($tag) . "'";
+		$tags[] = "'" . stripslashes($utw->GetCanonicalTag($tag)) . "'";
 	}
 
 	$tags = array_unique($tags);
 	$tagcount = count($tags);
 
 	if (strpos($request, "HAVING COUNT(ID)") == false && !$or_query) {
-		$request = preg_replace("/GROUP BY $tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);
+		$request = preg_replace("/GROUP BY +$tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);
 	}
 
 	$posts = $wpdb->get_results($request);
