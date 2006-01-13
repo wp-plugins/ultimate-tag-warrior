@@ -1051,7 +1051,7 @@ SQL;
 
 		$format = str_replace('%tag%', $tag_name, $format);
 		$format = str_replace('%tagdisplay%', $tag_display, $format);
-		$format = str_replace('%tagjsescaped%', str_replace("\'","\\'", $tag_name), $format);
+		$format = str_replace('%tagjsescaped%', str_replace("'","\\'", $tag_name), $format);
 
 		$format = str_replace('%tagcount%', $tag->count, $format);
 

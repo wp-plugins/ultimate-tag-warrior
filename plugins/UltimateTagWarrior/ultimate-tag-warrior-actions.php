@@ -525,7 +525,7 @@ function ultimate_display_tag_widget() {
 
 		} else {
 			$format = array(
-			'pre' => '<select onchange="if (document.getElementById(\\\'tag-menu\\\').value != \\\'\\\') { addTag(document.getElementById(\\\'tag-menu\\\').value) }" id="tag-menu"><option selected="selected" value="">Choose a tag</option>',
+			'pre' => '<select onchange="if (document.getElementById(\'tag-menu\').value != \'\') { addTag(document.getElementById(\'tag-menu\').value) }" id="tag-menu"><option selected="selected" value="">Choose a tag</option>',
 			'default' => '<option value="%tag%">%tagdisplay% (%tagcount%)</option>',
 			'post' => '</select>');
 
