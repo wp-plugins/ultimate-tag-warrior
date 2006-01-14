@@ -134,8 +134,6 @@ SQL;
 
 				$tag = $this->GetCanonicalTag($tag);
 
-				echo $tag;
-
 				$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 				$tagid = $wpdb->get_var($q);
 
@@ -189,9 +187,6 @@ SQL;
 				$q = "INSERT INTO $tabletags (tag) VALUES ('$tag')";
 				$wpdb->query($q);
 				$tagid = $wpdb->insert_id;
-
-				echo $q;
-				echo $wpdb->last_query;
 			}
 
 			$q = "SELECT rel_id FROM $tablepost2tag WHERE post_id = '$postID' AND tag_id = '$tagid'";
