@@ -1151,7 +1151,6 @@ SQL;
 	function FormatPost($post, $format) {
 		$url = get_permalink($post->ID);
 
-		setup_postdata($post);
 		$format = str_replace('%title%', $post->post_title, $format);
 		$format = str_replace('%postlink%', "<a href=\"$url\">$post->post_title</a>", $format);
 		$format = str_replace('%excerpt%', $post->post_excerpt, $format);
