@@ -4,7 +4,32 @@ $tablepost2tag = $table_prefix . "post2tag";
 $tabletag_synonyms = $table_prefix . "tag_synonyms";
 
 $lzndomain = "ultimate-tag-warrior";
-$current_build = 6;
+$current_build = 7;
+
+$siteurl = get_option('siteurl');
+$baseurl = get_option('utw_base_url');
+$home = get_option('home');
+$iconsettings = explode('|', get_option('utw_icons'));
+
+$prettyurls = get_option('utw_use_pretty_urls');
+
+$trailing = '';
+if (get_option('utw_trailing_slash') == 'yes') { $trailing = "/"; }
+
+$maxtagcolour = get_option ('utw_tag_cloud_max_color');
+$mintagcolour = get_option ('utw_tag_cloud_min_color');
+
+$maxtagsize = get_option ('utw_tag_cloud_max_font');
+$mintagsize = get_option ('utw_tag_cloud_min_font');
+$fontunits = get_option ('utw_tag_cloud_font_units');
+
+$notagtext = get_option('utw_no_tag_text');
+
+$_tagweightingcache = array();
+$_tagcache = array();
+$_posttagcache = array();
+
+$_relatedtagsmap = array();
 
 class UltimateTagWarriorCore {
 
@@ -21,7 +46,7 @@ class UltimateTagWarriorCore {
 		if ($installed_build < 1) {
 			$q = <<<SQL
 			CREATE TABLE IF NOT EXISTS $tabletags (
-			  ID int(11) NOT NULL auto_increment,
+			  tag_ID int(11) NOT NULL auto_increment,
 			  tag varchar(255) NOT NULL default '',
 			  PRIMARY KEY  (ID)
 			) TYPE=MyISAM;
@@ -34,6 +59,7 @@ SQL;
 			  rel_id int(11) NOT NULL auto_increment,
 			  tag_id int(11) NOT NULL default '0',
 			  post_id int(11) NOT NULL default '0',
+			  ip_address varchar(15),
 			  PRIMARY KEY  (rel_id)
 			) TYPE=MyISAM;
 SQL;
@@ -110,7 +136,13 @@ SQL;
 			}
 		}
 
-		update_option('utw_installed_build', $current_build);
+		if ($installed_build < 7) {
+			add_option ('utw_no_tag_text', 'No Tags', 'The text to display when there are no tags (can be blank)', 'yes');
+		}
+
+		if ($installed_build != $current_build) {
+			update_option('utw_installed_build', $current_build);
+		}
 	}
 
 	function ForceInstall() {
@@ -129,8 +161,10 @@ SQL;
 		foreach($tags as $tag) {
 			$tag = trim($tag);
 
-			if ($tag <> "") {
+			if ($tag <> "" && is_numeric($postID)) {
 				$tag = str_replace(' ', '-', $tag);
+				$tag = str_replace('"', '', $tag);
+				$tag = str_replace("'", '', $tag);
 
 				$tag = $this->GetCanonicalTag($tag);
 
@@ -175,8 +209,10 @@ SQL;
 
 		$tag = trim($tag);
 
-		if ($tag <> "") {
+		if ($tag <> "" && is_numeric($postID)) {
 			$tag = str_replace(' ', '-', $tag);
+			$tag = str_replace('"', '', $tag);
+			$tag = str_replace("'", '', $tag);
 
 			$tag = $this->GetCanonicalTag($tag);
 
@@ -194,7 +230,6 @@ SQL;
 			if ( is_null($wpdb->get_var($q))) {
 				$q = "INSERT INTO $tablepost2tag (post_id, tag_id) VALUES ('$postID','$tagid')";
 				$wpdb->query($q);
-
 			}
 		}
 	}
@@ -203,7 +238,9 @@ SQL;
 	function RemoveTag($postID, $tag) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
-		if ($tag <> "") {
+		if ($tag <> "" && is_numeric($postID)) {
+
+			$tag = str_replace('"','',str_replace("'",'',$tag));
 
 			$q = "SELECT tag_id FROM $tabletags WHERE tag='$tag' limit 1";
 			$tagid = $wpdb->get_var($q);
@@ -229,6 +266,8 @@ SQL;
 	function SaveCategoriesAsTags($postID) {
 		global $wpdb, $tablepost2tag, $wpdb;
 
+		if (!is_numeric($postID)) return;
+
 		$default = get_option('default_category');
 
 		$categories = $wpdb->get_results("SELECT c.cat_name FROM $wpdb->post2cat p2c INNER JOIN $wpdb->categories c ON p2c.category_id = c.cat_id WHERE p2c.post_id = $postID AND c.cat_ID != $default");
@@ -243,7 +282,7 @@ SQL;
 
 		if ($categories) {
 			foreach($categories as $cat) {
-				$alltags[] = str_replace(" ", "_", $cat->cat_name);
+				$alltags[] = str_replace(" ", "-", $cat->cat_name);
 			}
 		}
 
@@ -257,6 +296,8 @@ SQL;
 	 */
 	function SaveCustomFieldAsTags($postID, $fieldName, $separator) {
 		if (!$fieldName || !$separator) return;
+
+		if (!is_numeric($postID)) return;
 
 		$allExisting = get_post_meta($postID, $fieldName, false);
 
@@ -273,7 +314,7 @@ SQL;
 		foreach ($allExisting as $existing) {
 			$items = explode($separator, $existing);
 			foreach ($items as $tag) {
-				$alltags[] = str_replace(" ", "_", trim($tag));
+				$alltags[] = str_replace(" ", "-", trim($tag));
 			}
 		}
 
@@ -308,8 +349,10 @@ SQL;
 	function DeleteTags($postID) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
-		$query = "DELETE FROM $tablepost2tag WHERE post_id = $postID";
-		$wpdb->query($query);
+		if (is_numeric($postID)) {
+			$query = "DELETE FROM $tablepost2tag WHERE post_id = $postID";
+			$wpdb->query($query);
+		}
 	}
 
 	function DeletePostTags($postID) {
@@ -340,7 +383,7 @@ SQL;
 		if ($tagcount > 0) {
 			for ($i = 0; $i < $tagcount; $i++) {
 				if (trim($tagset[$i]) <> "") {
-					$taglist[] = "'" . trim($tagset[$i]) . "'";
+					$taglist[] = "'" . str_replace("'",'',str_replace('"','',trim($tagset[$i]))) . "'";
 				}
 			}
 		}
@@ -368,7 +411,7 @@ SQL;
 
 		if ($orphantagids) {
 			foreach ($orphantagids as $orphantagid) {
-				$q = "DELETE FROM $tabletags where tag_id = $orphantagid->id";
+				$q = "DELETE FROM $tabletags where tag_id = $orphantagid->tag_id";
 				$wpdb->query($q);
 			}
 		}
@@ -421,9 +464,9 @@ SQL;
 	}
 
 	function GetTagsForPost($post, $limit = 0) {
-		global $tabletags, $tablepost2tag, $wpdb;
+		global $tabletags, $tablepost2tag, $wpdb, $_posttagcache;
 
-		if ($limit != 0) {
+		if ($limit != 0 && is_numeric($limit)) {
 			$limitclause = "LIMIT $limit";
 		}
 
@@ -432,10 +475,19 @@ SQL;
 			$postID = $post->ID;
 		}
 
+		if (!is_numeric($postID)) return array();
+
+		if ($_posttagcache[$postID . ':' . $limit]) {
+			return $_posttagcache[$postID . ':' . $limit];
+		}
 
 		if ($postID) {
 			$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
-			return($wpdb->get_results($q));
+
+			$tags = $wpdb->get_results($q);
+			$_posttagcache[$postID . ':' . $limit] = $tags;
+
+			return $tags;
 		}
 	}
 
@@ -445,6 +497,9 @@ SQL;
 		if (is_object($tag)) {
 			$tag = $tag->tag;
 		}
+
+		$tag = str_replace("'",'',str_replace('"','',$tag));
+
 
 		$now = current_time('mysql', 1);
 
@@ -462,14 +517,14 @@ SQL;
 		   return ($wpdb->get_results($q));
 	}
 
-	function GetPostsForTags($tags) {
+	function GetPostsForAnyTags($tags) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
-		$taglist = "'" . $tags[0]->tag . "'";
+		$taglist = "'" . str_replace("'",'',str_replace('"','',urldecode($tags[0]->tag))). "'";
 		$tagcount = count($tags);
 		if ($tagcount > 1) {
 			for ($i = 1; $i <= $tagcount; $i++) {
-				$taglist = $taglist . ", '" . urldecode($tags[$i]->tag) . "'";
+				$taglist = $taglist . ", '" . str_replace("'",'',str_replace('"','',urldecode($tags[$i]->tag))) . "'";
 			}
 		}
 
@@ -490,11 +545,44 @@ SQL;
 		   return ($wpdb->get_results($q));
 	}
 
+	function GetPostsForTags($tags) {
+		global $tabletags, $tablepost2tag, $wpdb;
+
+		$taglist = "'" . str_replace("'",'',str_replace('"','',urldecode($tags[0]->tag))). "'";
+		$tagcount = count($tags);
+		if ($tagcount > 1) {
+			for ($i = 1; $i <= $tagcount; $i++) {
+				$taglist = $taglist . ", '" . str_replace("'",'',str_replace('"','',urldecode($tags[$i]->tag))) . "'";
+			}
+		}
+
+		$now = current_time('mysql', 1);
+
+		   $q = <<<SQL
+		SELECT *
+			 FROM $tablepost2tag p2t, $tabletags t, $wpdb->posts p
+			 WHERE p2t.tag_id = t.tag_id
+			 AND p2t.post_id = p.ID
+			 AND (t.tag IN ($taglist))
+			 AND post_date_gmt < '$now'
+			 AND post_status = 'publish'
+			 GROUP BY p2t.post_id
+			 HAVING COUNT(p2t.post_id)=$tagcount
+			 ORDER BY t.tag ASC
+SQL;
+
+		   return ($wpdb->get_results($q));
+	}
+
 	function GetPostHasTags($postID) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
-		$q = "SELECT count(*) FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID";
-		return($wpdb->get_var($q) > 0);
+		if (is_numeric($postID)) {
+			$q = "SELECT count(*) FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID";
+			return($wpdb->get_var($q) > 0);
+		} else {
+			return false;
+		}
 	}
 
 	function ClearSynonymsForTag($tagid="") {
@@ -505,7 +593,7 @@ SQL;
 				$tag = $tag->tag;
 			}
 			// XXX: Fix me when you need me.
-		} else {
+		} else if (is_numeric($tagid)) {
 			return $wpdb->query("DELETE FROM $tabletag_synonyms WHERE tag_id = $tagid");
 		}
 	}
@@ -517,8 +605,10 @@ SQL;
 			if (is_object($tag)) {
 				$tag = $tag->tag;
 			}
+			$tag = str_replace("'",'',str_replace('"','',$tag));
+
 			return $wpdb->get_results("SELECT ts.synonym as tag, ts.tagsynonymid as tag_id FROM $tabletags t INNER JOIN $tabletag_synonyms ts ON t.tag_id = ts.tag_id WHERE t.tag = '$tag'");
-		} else {
+		} else if (is_numeric($tagid)) {
 			return $wpdb->get_results("SELECT ts.synonym as tag, ts.tagsynonymid as tag_id FROM $tabletag_synonyms ts WHERE ts.tag_id = $tagid");
 		}
 	}
@@ -531,15 +621,17 @@ SQL;
 		global $tabletags, $tabletag_synonyms, $wpdb;
 
 		$synonym = trim($synonym);
+		$synonym = str_replace("'",'',str_replace('"','',$synonym));
 
 		$q = "SELECT count(*) FROM $tabletags WHERE tag = '$synonym'";
 
 		if ($wpdb->get_var($q) == 0) {
 			if (!$tagid) {
+				$tag = str_replace("'",'',str_replace('"','',$tag));
 				$tagid = $wpdb->get_var("SELECT tag_id FROM $tabletags WHERE tag = '$tag'");
 			}
 
-			if ($tagid) {
+			if ($tagid && is_numeric($tagid)) {
 				$wpdb->query("INSERT INTO $tabletag_synonyms (tag_id, synonym) VALUES ($tagid, '$synonym')");
 			} else {
 				return "Tag $tagid doesn't exist!";
@@ -553,6 +645,8 @@ SQL;
 
 	function GetCanonicalTag($tag) {
 		global $tabletags, $tabletag_synonyms, $wpdb;
+
+		$tag = str_replace("'",'',str_replace('"','', str_replace('\\','',$tag)));
 
 		$truetag = $wpdb->get_var("select tag from $tabletags where tag = '$tag'");
 
@@ -590,11 +684,11 @@ SQL;
 
 		$now = current_time('mysql', 1);
 
-		$taglist = "'" . $tags[0]->tag . "'";
+		$taglist = "'" . str_replace("'",'',str_replace('"','',urldecode($tags[0]->tag))). "'";
 		$tagcount = count($tags);
 		if ($tagcount > 1) {
 			for ($i = 1; $i <= $tagcount; $i++) {
-				$taglist = $taglist . ", '" . urldecode($tags[$i]->tag) . "'";
+				$taglist = $taglist . ", '" . str_replace("'",'',str_replace('"','',urldecode($tags[$i]->tag))) . "'";
 			}
 		}
 
@@ -625,7 +719,7 @@ SQL;
 			}
 
 			$q = <<<SQL
-		SELECT t.tag, COUNT(p2t.post_id) AS count
+		SELECT t.*, COUNT(p2t.post_id) AS count
 		FROM $tablepost2tag p2t, $tabletags t, $wpdb->posts p
 		WHERE p2t.post_id IN ($postidlist)
 		AND p2t.post_id = p.ID
@@ -642,6 +736,22 @@ SQL;
 		}
 	}
 
+	function GetRelatedTagsMap() {
+		global $wpdb, $tablepost2tag, $_relatedtagsmap;
+
+		if (count($_relatedtagsmap) == 0) {
+			$q = "select tag.tag_id as tagid, related.tag_id as relatedid from $tablepost2tag tag inner join $tablepost2tag related on tag.post_id = related.post_id and tag.tag_id != related.tag_id";
+
+			foreach($wpdb->get_results($q) as $row) {
+				if (!is_array($_relatedtagsmap[$row->tagid]) || !in_array($row->relatedid, $_relatedtagsmap[$row->tagid])) {
+					$_relatedtagsmap[$row->tagid][] = $row->relatedid;
+				}
+			}
+		}
+
+		return $_relatedtagsmap;
+	}
+
 	function ShowRelatedPosts($tags, $format, $limit=0) {
 		echo $this->FormatPosts($this->GetRelatedPosts($tags, $limit), $format);
 	}
@@ -651,11 +761,11 @@ SQL;
 
 		$now = current_time('mysql', 1);
 
-		$taglist = "'" . $tags[0]->tag . "'";
+		$taglist = "'" . str_replace("'",'',str_replace('"','',urldecode($tags[0]->tag))). "'";
 		$tagcount = count($tags);
 		if ($tagcount > 1) {
 			for ($i = 1; $i <= $tagcount; $i++) {
-				$taglist = $taglist . ", '" . urldecode($tags[$i]->tag) . "'";
+				$taglist = $taglist . ", '" . str_replace("'",'',str_replace('"','',urldecode($tags[$i]->tag))) . "'";
 			}
 		}
 
@@ -725,7 +835,7 @@ SQL;
 	}
 
 	function GetWeightedTags($order, $direction, $limit = 150, $date_sensitive = false) {
-		global $wpdb, $tabletags, $tablepost2tag;
+		global $wpdb, $tabletags, $tablepost2tag, $_tagweightingcache;
 
 		if ($order <> "tag" && $order <> "weight") { $order = "weight"; }
 		if ($direction <> "asc" && $direction <> "desc") { $direction = "desc"; }
@@ -748,6 +858,7 @@ SQL;
 		if ($date_sensitive) {
 			$dateclause = $this->GetDateSQL();
 		}
+
 		$totaltags = $this->GetDistinctTagCount($date_sensitive);
 		$maxtag = $this->GetMostPopularTagCount($date_sensitive);
 
@@ -762,7 +873,7 @@ SQL;
 		}
 
 		$query = <<<SQL
-			select tag, count(p2t.post_id) as count, ((count(p2t.post_id)/$totaltags)*100) as weight, ((count(p2t.post_id)/$maxtag)*100) as relativeweight
+			select tag, t.tag_id, count(p2t.post_id) as count, ((count(p2t.post_id)/$totaltags)*100) as weight, ((count(p2t.post_id)/$maxtag)*100) as relativeweight
 			from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id
 							  inner join $wpdb->posts p on p2t.post_id = p.ID
 			 WHERE post_date_gmt < '$now'
@@ -919,7 +1030,7 @@ SQL;
 	}
 
 	function FormatTag($tag, $format) {
-		global $install_directory;
+		global $install_directory, $baseurl, $home, $siteurl, $prettyurls, $iconsettings, $trailing;
 
 		$tag_display = str_replace('_',' ', $tag->tag);
 		$tag_display = str_replace('-',' ',$tag_display);
@@ -932,11 +1043,6 @@ SQL;
 		$wiki_tag_name = str_replace(' ', '_', $tag_display);
 		$gada_tag_name = str_replace(' ', '.',$tag_display);
 
-		$baseurl = get_option('utw_base_url');
-		$home = get_option('home');
-		$siteurl = get_option('siteurl');
-
-		$prettyurls = get_option('utw_use_pretty_urls');
 		$tagset = array();
 		$tags = get_query_var("tag");
 
@@ -960,7 +1066,7 @@ SQL;
 			}
 		}
 
-		$iconsettings = explode('|', get_option('utw_icons'));
+
 		$iconformat = '';
 		foreach($iconsettings as $iconsetting) {
 			switch($iconsetting) {
@@ -992,8 +1098,6 @@ SQL;
 					break;
 			}
 		}
-
-		if (get_option('utw_trailing_slash') == 'yes') { $trailing = "/"; }
 
 		global $post;
 
@@ -1029,12 +1133,33 @@ SQL;
 
 		$format = str_replace('%icons%', $iconformat, $format);
 
+		if (strpos($format, '%relatedtagids%') !== FALSE) {
+			$_relatedtagsmap = $this->GetRelatedTagsMap();
+			/*
+			$tagarr = array();
+			$tagarr[] = $tag;
+			$related = $this->GetRelatedTags($tagarr);
+
+			if ($related) {
+				foreach($related as $relatedtag) {
+					$idlist .= $relatedtag->tag_id  . ',';
+				}
+			} */
+//			print_r($_relatedtagsmap[$tag->tag_id]);
+			if ($_relatedtagsmap[$tag->tag_id]) {
+				$format = str_replace('%relatedtagids%', implode(',',$_relatedtagsmap[$tag->tag_id]), $format);
+			} else {
+				$format = str_replace('%relatedtagids%', '', $format);
+			}
+		}
+
 		$format = str_replace('%technoratiurl%', "http://www.technorati.com/tag/$trati_tag_name", $format);
 		$format = str_replace('%flickrurl%', "http://www.flickr.com/photos/tags/$flickr_tag_name", $format);
 		$format = str_replace('%deliciousurl%', "http://del.icio.us/tag/$tag_name_url", $format);
 		$format = str_replace('%wikipediaurl%', "http://en.wikipedia.org/wiki/$wiki_tag_name", $format);
 		$format = str_replace('%gadabeurl%', "http://$gada_tag_name.gada.be", $format);
 		$format = str_replace('%zniffurl%', "http://zniff.com/?s=%22$trati_tag_name%22&amp;sort=", $format);
+		$format = str_replace ('%rssurl%', $rssurl, $format);
 
 		$format = str_replace('%technoratiicon%', "<a href=\"http://www.technorati.com/tag/$trati_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" alt=\"Technorati tag page for %tagdisplay%\"/></a>", $format);
 		$format = str_replace('%flickricon%', "<a href=\"http://www.flickr.com/photos/tags/$flickr_tag_name\" rel=\"tag\"><img src=\"$siteurl/wp-content/plugins$install_directory/flickricon.jpg\" alt=\"Flickr tag page for %tagdisplay%\"/></a>", $format);
@@ -1047,6 +1172,7 @@ SQL;
 		$format = str_replace('%tag%', $tag_name, $format);
 		$format = str_replace('%tagdisplay%', $tag_display, $format);
 		$format = str_replace('%tagjsescaped%', str_replace("'","\\'", $tag_name), $format);
+		$format = str_replace('%tagid%', $tag->tag_id, $format);
 
 		$format = str_replace('%tagcount%', $tag->count, $format);
 
@@ -1113,6 +1239,7 @@ SQL;
 		} else {
 			$format = str_replace('%postid%', $_REQUEST["post"], $format);
 		}
+
 		return $format;
 	}
 
@@ -1182,7 +1309,7 @@ SQL;
 	}
 
 	function GetFormatForType($formattype) {
-		global $user_level, $post, $lzndomain, $predefinedFormats, $install_directory;
+		global $user_level, $post, $lzndomain, $predefinedFormats, $install_directory, $notagtext;
 
 		if ($post->ID) {
 			$postid = $post->ID;
@@ -1195,19 +1322,20 @@ SQL;
 
 			$predefinedFormats["tagsetsimplelist"] = array('first'=>'%taglink%', 'default'=>' %operatortext% %taglink%');
 			$predefinedFormats["tagsetcommalist"] = array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>' %operatortext% %taglink%');
-			$predefinedFormats["simplelist"] = array ("default"=>"%taglink% ", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["iconlist"] = array ("default"=>"%taglink% %icons% ", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["htmllist"] = array ("default"=>"<li>%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
-			$predefinedFormats["htmllisticons"] = array ("default"=>"<li>%icons%%taglink%</li>", "none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
-			$predefinedFormats["htmllistandor"] = array ("default"=>"<li>%taglink% %intersectionlink% %unionlink%</li>","none"=>"<li>" . __("No Tags", $lzndomain) . "</li>");
-			$predefinedFormats["commalist"] = array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["commalistwithtaglabel"] = array ("single"=>"Tag:  %taglink%", "default"=>", %taglink%", "first"=>"Tags: %taglink%", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["commalisticons"] = array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["technoraticommalist"] = array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["technoraticommalistwithlabel"] = array ("default"=>", %technoratitag%", "first"=>"Technorati Tags: %technoratitag%", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["technoraticommalistwithiconlabel"] = array ("default"=>", %technoratitag%", "first"=>"<a href=\"http://www.technorati.com/tag/\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" alt=\"Technorati\"/></a> %technoratitag%", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["gadabecommalist"] = array ("default"=>", %gadabetag%", "first"=>"%gadabetag%", "none"=>__("No Tags", $lzndomain) );
-			$predefinedFormats["andcommalist"] = array ("default"=>", %taglink% %intersectionlink% %unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>__("No Tags", $lzndomain) );
+			$predefinedFormats["tagsettextonly"] = array('first'=>'%tagdisplay%','default'=>', %tagdisplay%','last'=>' %operatortext% %tagdisplay%');
+			$predefinedFormats["simplelist"] = array ("default"=>"%taglink% ", "none"=>$notagtext );
+			$predefinedFormats["iconlist"] = array ("default"=>"%taglink% %icons% ", "none"=>$notagtext );
+			$predefinedFormats["htmllist"] = array ("default"=>"<li>%taglink%</li>", "none"=>"<li>" . $notagtext . "</li>");
+			$predefinedFormats["htmllisticons"] = array ("default"=>"<li>%icons%%taglink%</li>", "none"=>"<li>" . $notagtext . "</li>");
+			$predefinedFormats["htmllistandor"] = array ("default"=>"<li>%taglink% %intersectionlink% %unionlink%</li>","none"=>"<li>" . $notagtext . "</li>");
+			$predefinedFormats["commalist"] = array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>$notagtext );
+			$predefinedFormats["commalistwithtaglabel"] = array ("single"=>"Tag:  %taglink%", "default"=>", %taglink%", "first"=>"Tags: %taglink%", "none"=>$notagtext );
+			$predefinedFormats["commalisticons"] = array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>$notagtext );
+			$predefinedFormats["technoraticommalist"] = array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>$notagtext );
+			$predefinedFormats["technoraticommalistwithlabel"] = array ("default"=>", %technoratitag%", "first"=>"Technorati Tags: %technoratitag%", "none"=>$notagtext );
+			$predefinedFormats["technoraticommalistwithiconlabel"] = array ("default"=>", %technoratitag%", "first"=>"<a href=\"http://www.technorati.com/tag/\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" alt=\"Technorati\"/></a> %technoratitag%", "none"=>$notagtext );
+			$predefinedFormats["gadabecommalist"] = array ("default"=>", %gadabetag%", "first"=>"%gadabetag%", "none"=>$notagtext );
+			$predefinedFormats["andcommalist"] = array ("default"=>", %taglink% %intersectionlink% %unionlink%", "first"=>"%taglink% %intersectionlink%%unionlink%", "none"=>$notagtext );
 
 			$relStr = "";
 			if ($formattype == "superajaxrelated" || $formattype == "superajaxrelateditem") {
@@ -1253,10 +1381,10 @@ CSS;
 			$predefinedFormats["weightedlongtailvertical"] = array("pre"=>"<div class=\"longtailvert\">", "default"=>'<div style="background-color:%tagrelweightrankcolor%; width:%tagrelweightint%%; \"><a href="%tagurl%" title="%tagdisplay% (%tagcount%)" style="display:block; ">%tagdisplay%</a></div>', "post"=>"</div>");
 			$predefinedFormats["coloredtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
 			$predefinedFormats["sizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%\">%tagdisplay%</a> ");
-			$predefinedFormats["coloredsizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
-			$predefinedFormats["sizedcoloredtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
+			$predefinedFormats["coloredsizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
+			$predefinedFormats["sizedcoloredtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
 
-			$predefinedFormats["invisiblecommalist"] = array ("pre"=>"<span style=\"display:none\">","default"=>", %taglink%", "first"=>"%taglink%", "none"=>__("No Tags", $lzndomain),'post'=>'</span>' );
+			$predefinedFormats["invisiblecommalist"] = array ("default"=>", %taglink%", "first"=>"<span style=\"display:none\">%taglink%", "none"=>$notagtext,'post'=>'</span>' );
 
 			// Thanks drac! http://lair.fierydragon.org/
 			$predefinedFormats["coloredsizedtagcloudwithcount"] = array("default"=>"<a href=\"%tagurl%\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%<sub style=\"font-size:60%; color:#ccc;\">%tagcount%</sub></a> ");
@@ -1282,19 +1410,17 @@ CSS;
 
 	/* This is pretty filthy.  Doing math in hex is much too weird.  It's more likely to work,  this way! */
 	function GetColorForWeight($weight) {
+		global $maxtagcolour, $mintagcolour;
 		if ($weight) {
 			$weight = $weight/100;
 
-			$max = get_option ('utw_tag_cloud_max_color');
-			$min = get_option ('utw_tag_cloud_min_color');
+			$minr = hexdec(substr($mintagcolour, 1, 2));
+			$ming = hexdec(substr($mintagcolour, 3, 2));
+			$minb = hexdec(substr($mintagcolour, 5, 2));
 
-			$minr = hexdec(substr($min, 1, 2));
-			$ming = hexdec(substr($min, 3, 2));
-			$minb = hexdec(substr($min, 5, 2));
-
-			$maxr = hexdec(substr($max, 1, 2));
-			$maxg = hexdec(substr($max, 3, 2));
-			$maxb = hexdec(substr($max, 5, 2));
+			$maxr = hexdec(substr($maxtagcolour, 1, 2));
+			$maxg = hexdec(substr($maxtagcolour, 3, 2));
+			$maxb = hexdec(substr($maxtagcolour, 5, 2));
 
 			$r = dechex(intval((($maxr - $minr) * $weight) + $minr));
 			$g = dechex(intval((($maxg - $ming) * $weight) + $ming));
@@ -1310,20 +1436,17 @@ CSS;
 
 
 	function GetFontSizeForWeight($weight) {
-		$max = get_option ('utw_tag_cloud_max_font');
-		$min = get_option ('utw_tag_cloud_min_font');
+		global $maxtagsize, $mintagsize, $fontunits;
 
-		$units = get_option ('utw_tag_cloud_font_units');
 		if ($units == "") $units = '%';
 
-		if ($max > $min) {
-			$fontsize = (($weight/100) * ($max - $min)) + $min;
-
+		if ($maxtagsize > $mintagsize) {
+			$fontsize = (($weight/100) * ($maxtagsize - $mintagsize)) + $mintagsize;
 		} else {
-			$fontsize = (((100-$weight)/100) * ($min - $max)) + $max;
+			$fontsize = (((100-$weight)/100) * ($maxtagsize - $mintagsize)) + $maxtagsize;
 		}
 
-		return intval($fontsize) . $units;
+		return intval($fontsize) . $fontunits;
 	}
 }
 

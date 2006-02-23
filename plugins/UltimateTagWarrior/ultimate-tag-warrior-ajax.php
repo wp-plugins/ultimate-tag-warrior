@@ -179,13 +179,22 @@ switch($action) {
 		}
 
 		if (count($taglist) > 0) {
+			$searchtype = $_REQUEST['type'];
+			$op = "";
 			$tags = $utw->GetTagsForTagString( implode(',',$taglist));
 
-			$posts = $utw->GetPostsForTags($tags);
+			if ($searchtype == "any") {
+				$posts = $utw->GetPostsForAnyTags($tags);
+				$op = "or";
+			} else {
+				$posts = $utw->GetPostsForTags($tags);
+				$op = "and";
+			}
+
 			echo "<h4>Matches for ";
-			echo $utw->FormatTags($tags, array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>' or %taglink%'));
+			echo $utw->FormatTags($tags, array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>" $op %taglink%"));
 			echo "</h4>";
-			echo $utw->FormatPosts($posts, array('first'=>'<dl><dt>%postlink%</dt><dd>%excerpt%</dd>','default'=>'<dt>%postlink%</dt><dd>%excerpt%</dd>', 'last'=>'<dt>%postlink%</dt><dd>%excerpt%</dd></dl>'));
+			echo $utw->FormatPosts($posts, array('first'=>'<dl><dt>%postlink%</dt><dd>%excerpt%</dd>','default'=>'<dt>%postlink%</dt><dd>%excerpt%</dd>', 'last'=>'<dt>%postlink%</dt><dd>%excerpt%</dd></dl>', 'none'=>'No Matching Posts'));
 		}
 
 		break;

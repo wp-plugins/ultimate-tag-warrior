@@ -4,6 +4,15 @@ require_once('ultimate-tag-warrior-core.php');
 $utw = new UltimateTagWarriorCore();
 
 $install_directory = "/UltimateTagWarrior";
+$starttag = "[tag]";
+$endtag = "[/tag]";
+
+$starttags = "[tags]";
+$endtags = "[/tags]";
+
+$embedtags = get_option('utw_use_embedded_tags');
+
+$embeddedtagformat = '%taglink%';
 
 class UltimateTagWarriorActions {
 
@@ -56,6 +65,10 @@ function utw_options() {
 	$configValues[] = array("setting"=>"utw_base_url", "label"=>__("Base url", $lzndomain),  "type"=>"string");
 	$configValues[] = array("setting"=>"utw_trailing_slash", 'label'=>__("Include trailing slash on tag urls", $lzndomain), 'type'=>'boolean');
 
+	$configValues[] = array("setting"=>"", "label"=>__("Embedded Tags", $lzndomain),  "type"=>"label");
+	$configValues[] = array("setting"=>"", "value"=>__("Embedded tags are tags which are found in the content body of posts.  They use the format of the <a href=\"http://www.broobles.com/scripts/simpletags/\">Simple Tags</a> plugin, which is as good a choice as any.  Tags that are [tag]like this[/tag] will turn into local tag links in the content,  and will be added to the list of tags for the post and [tags]like this, or this[/tags] will be treated as a list of tags for the post, and be added to the list of tags for the post,  and won't display when you view the post.", $lzndomain),  "type"=>"help");
+	$configValues[] = array("setting"=>"utw_use_embedded_tags", "label"=>__("Use embedded tags", $lzndomain),  "type"=>"boolean");
+
 	$configValues[] = array("setting"=>"", "label"=>__("Debugging", $lzndomain),  "type"=>"label");
 
 	$configValues[] = array("setting"=>"", "value"=>__("Selecting this option will display some debugging information in HTML comments.  You probably don't need this on (:", $lzndomain),  "type"=>"help");
@@ -90,6 +103,8 @@ function utw_options() {
 	$configValues[] = array("setting"=>'utw_tag_cloud_font_units', 'label'=>__('Font size units', $lzndomain), "type"=>"dropdown", "options"=>array('%','pt','px','em'));
 
 	$configValues[] = array("setting"=>'utw_icons', 'label'=>__('Icons to display in icon formats', $lzndomain), "type"=>"multiselect", "options"=>array('Technorati','Flickr','delicious','Wikipedia','gadabe', 'Zniff', 'RSS'));
+
+	$configValues[] = array('setting'=>'utw_no_tag_text', 'label'=>__('The text to display when there are no tags (can be left blank)'), 'type'=>'string');
 
 	$configValues[] = array("setting"=>"", "label"=>__("Editing Options", $lzndomain),  "type"=>"label");
 	$configValues[] = array("setting"=>"", "value"=>__("These options are for the editing of tags.  The show existing tags option will include a list of your existing tags on the edit screen for easy addition to posts.  The dropdown option will display an alphabetised dropdown list and the tag list option provides a simple list of tags.  The save categories as tags option will add any selected categories as tags in addition to any tags which are specified.", $lzndomain),  "type"=>"help");
@@ -167,6 +182,11 @@ function ultimate_better_admin() {
 	if ($_GET["action"] == "savetagupdate") {
 		$tagid = $_GET["edittag"];
 
+		if (!is_numeric($tagid)) {
+			echo "<div class=\"error\"><p>An invalid tag ID was passed in.</p></div>";
+			return;
+		}
+
 		if ($_GET["updateaction"] == "Rename") {
 			$tag = $_GET["renametagvalue"];
 
@@ -179,6 +199,10 @@ function ultimate_better_admin() {
 
 			foreach ($tagset as $tag) {
 				$tag = trim($tag);
+				$tag = str_replace(' ', '-', $tag);
+				$tag = str_replace('"', '', $tag);
+				$tag = str_replace("'", '', $tag);
+
 				$q = "SELECT tag_id FROM $tabletags WHERE tag = '$tag'";
 				$thistagid = $wpdb->get_var($q);
 
@@ -452,7 +476,7 @@ $_POST['tagset'] the list of tags.
 */
 function ultimate_save_tags($postID)
 {
-	global $wpdb, $tableposts, $table_prefix, $utw;
+	global $wpdb, $tableposts, $table_prefix, $utw, $starttag, $endtag, $starttags, $endtags, $embedtags;
 
 	$tags = $wpdb->escape($_POST['tagset']);
 	$tags = explode(',',$tags);
@@ -463,6 +487,27 @@ function ultimate_save_tags($postID)
 		$utw->SaveCategoriesAsTags($postID);
 	}
 
+	if ($embedtags == 'yes') {
+		$post = &get_post($postID);
+
+		$findTagsRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttags) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtags) . ')/i';
+
+		preg_match_all($findTagsRegEx, $post->post_content, $matches);
+		foreach ($matches[2] as $match) {
+			foreach(explode(',', $match) as $tag) {
+				$utw->AddTag($postID, $tag);
+			}
+		}
+
+
+		$findTagRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttag) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtag) . ')/i';
+
+		preg_match_all($findTagRegEx, $post->post_content, $matches);
+		foreach ($matches[2] as $match) {
+			$utw->AddTag($postID, $match);
+		}
+
+	}
 
     return $postID;
 }
@@ -495,9 +540,10 @@ function ultimate_display_tag_widget() {
 		$postid = $post;
 	}
 
-
-    $q = "select t.tag from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id and p2t.post_id=$postid";
-    $tags = $wpdb->get_results($q);
+	if (is_numeric($postid)) {
+		$q = "select t.tag from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id and p2t.post_id=$postid";
+		$tags = $wpdb->get_results($q);
+	}
 
     if ($tags) {
 	  foreach($tags as $tag) {
@@ -534,7 +580,7 @@ function ultimate_display_tag_widget() {
 	}
 
   $suggestions .='<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions"/>';
-  $suggestions .='<div id="suggestedTags"></div></div>';
+  $suggestions .='<div id="suggestedTags"></div>';
 
   echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tags (comma separated list)</h3><div class="dbx-content">' . $widget . '</div></fieldset>';
   echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tag Suggestions (Courtesy of <a href="http://www.tagyu.com">Tagyu</a>)</h3><div class="dbx-content">' . $suggestions . '</div></fieldset>';
@@ -542,14 +588,36 @@ function ultimate_display_tag_widget() {
 
 }
 
+function regExEscape($str) {
+	$str = str_replace('\\', '\\\\', $str);
+	$str = str_replace('/', '\\/', $str);
+	$str = str_replace('[', '\\[', $str);
+	$str = str_replace(']', '\\]', $str);
+
+	return $str;
+}
+
+function replaceTagWithLink($matches) {
+	global $utw, $embeddedtagformat;
+	$tag = $utw->GetTagsForTagString("'" . str_replace(' ','-',strtolower($matches[2])) . "'");
+
+	return $utw->FormatTags($tag, $embeddedtagformat);
+}
+
 function ultimate_the_content_filter($thecontent='') {
-	global $post, $utw, $lzndomain;
+	global $post, $utw, $lzndomainvar, $starttag, $endtag, $starttags, $endtags, $embedtags;
+
+	$tagStartMarker = $starttag;
+	$tagEndMarker = $endtag;
 
 	$tags = $utw->GetTagsForPost($post->ID);
 
-	// Don't include anything on 'page' posts if there are no tags.  There's a check for no tags in case people have tinkered with the page editing thing to allow it.
-	if (count($tags) == 0 && $post->post_status == 'static') {
-		return $thecontent;
+	$findTagRegEx = '/(' . UltimateTagWarriorActions::regExEscape($tagStartMarker) . '(.*?)' . UltimateTagWarriorActions::regExEscape($tagEndMarker) . ')/i';
+	$findTagsRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttags) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtags) . ')/i';
+
+	if ($embedtags == 'yes') {
+		$thecontent = preg_replace($findTagsRegEx, '', $thecontent);
+		$thecontent = preg_replace_callback($findTagRegEx, array("UltimateTagWarriorActions","replaceTagWithLink"), $thecontent);
 	}
 
 	if (get_option('utw_include_local_links') != 'No' && get_option('utw_include_local_links') != 'no' ) {
@@ -573,7 +641,7 @@ function ultimate_the_content_filter($thecontent='') {
 
 		} else {
 			// This is a throwback to when the format wasn't specified.
-			$thecontent = $thecontent . $utw->FormatTags($tags, array("first"=>"<span class=\"localtags\">%taglink% ","default"=>"%taglink% ", "last"=>"%taglink%</span>"));
+	//		$thecontent = $thecontent . $utw->FormatTags($tags, array("first"=>"<span class=\"localtags\">%taglink% ","default"=>"%taglink% ", "last"=>"%taglink%</span>"));
 		}
 	}
 
@@ -597,13 +665,18 @@ function ultimate_the_content_filter($thecontent='') {
 			}
 		} else {
 			// This is a throwback to when the format wasn't specified.
-			$thecontent = $thecontent . $utw->FormatTags($tags, array("pre"=>__("<span class=\"technoratitags\">Technorati Tags", $lzndomain) . ": ","default"=>"%technoratitag% ", "last"=>"%technoratitag%","none"=>"","post"=>"</span>"));
+	//		$thecontent = $thecontent . $utw->FormatTags($tags, array("pre"=>__("<span class=\"technoratitags\">Technorati Tags", $lzndomain) . ": ","default"=>"%technoratitag% ", "last"=>"%technoratitag%","none"=>"","post"=>"</span>"));
 		}
 	}
 
 
 	if (is_feed() && get_option('utw_append_tag_links_to_feed')) {
 		$thecontent = $thecontent . $utw->FormatTags($tags, $utw->GetFormatForType('commalist'));
+	}
+
+	// Don't include anything on 'page' posts if there are no tags.  There's a check for no tags in case people have tinkered with the page editing thing to allow it.
+	if (count($tags) == 0 && $post->post_status == 'static') {
+		return $thecontent;
 	}
 
 	return $thecontent;
@@ -616,16 +689,22 @@ function ultimate_add_tags_to_rss($the_list, $type="") {
     $the_list = '';
     foreach ($categories as $category) {
         $category->cat_name = convert_chars($category->cat_name);
-        $the_list .= "\n\t<dc:subject>$category->cat_name</dc:subject>";
+        $the_list .= "\n\t<dc:subject>" . $category->cat_name . "</dc:subject>";
     }
 
 	$format="<dc:subject>%tagdisplay%</dc:subject>";
 	echo $the_list;
-	echo $utw->FormatTags($utw->GetTagsForPost($post->ID), $format);
+	$tags = $utw->FormatTags($utw->GetTagsForPost($post->ID), $format);
+	echo str_replace('&', '&amp;', $tags);
 }
 
 function ultimate_add_ajax_javascript() {
-	global $install_directory;
+	global $install_directory, $wp_query;
+
+	if (get_query_var('tag') != "") {
+		$wp_query->is_home = false;
+	}
+
 	$rpcurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
 	$jsurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax-js.php";
 	$js = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-js.php";
@@ -651,6 +730,10 @@ function ultimate_posts_where($where) {
 	if (get_query_var("tag") != "") {
 		global $table_prefix, $wpdb;
 
+		global $wp_query;
+
+		$wp_query->is_home=false;
+
 		$tabletags = $table_prefix . "tags";
 		$tablepost2tag = $table_prefix . "post2tag";
 
@@ -664,7 +747,7 @@ function ultimate_posts_where($where) {
 
 		$tags = array();
 		foreach($tagset as $tag) {
-			$tags[] = "'" . $utw->GetCanonicalTag($tag) . "'";
+			$tags[] = "'" . $utw->GetCanonicalTag(str_replace("'",'',str_replace('"','',stripslashes($tag)))) . "'";
 		}
 		$tags = array_unique($tags);
 

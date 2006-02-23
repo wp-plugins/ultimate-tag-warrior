@@ -1,6 +1,6 @@
 <html>
 <head>
-<title>Ultimate Tag Warrior 2.9.2:  Help:  Custom Formatting</title>
+<title>Ultimate Tag Warrior 3:  Help:  Custom Formatting</title>
 <style type="text/css">
 body, td {font-family:Verdana; font-size:0.8em; line-height:2em;}
 dt {font-weight:bolder; }
@@ -105,6 +105,8 @@ table, td {border:1px solid #AAA}
 <tr><td>%tagdisplay%</td><td>The tag as displayed (includes spaces)</td><td>Foo Bar</td></tr>
 <tr><td>%tagjsescaped%</td><td>The tag, escaped for including in javascript</td><td>Bar\'s</td></tr>
 <tr><td>%tagcount%</td><td>The number of times the tag is in use</td><td>12</td></tr>
+<tr><td>%tagid%</td><td>The id for the tag</td><td>15</td></tr>
+
 <tr><td>%tagweight%</td><td>The percentage of times this tag is used (#this tag/#tag associations)</td><td>7.56</td></tr>
 <tr><td>%tagweightint%</td><td>The ceiling of %tagweight%</td><td>8</td></tr>
 <tr><td>%tagweightcolor%</td><td>The colour that corresponds to the tag weight</td><td>#888888</td></tr>
@@ -118,6 +120,8 @@ table, td {border:1px solid #AAA}
 <tr><td>%tagrelweightintrank%</td><td>The tag rank, rounded up to the nearest integer</td><td>24</td></tr>
 <tr><td>%tagrelweightcolorrank%</td><td>The colour that corresponds to the tag rank</td><td>#111111</td></tr>
 <tr><td>%tagrelweightfontsizerank%</td><td>The font size that corresponds to the tag rank</td><td>114%</td></tr>
+
+<tr><td>%relatedtagids%</td><td>A comma separated list of related tag ids</td><td>12,42,56</td></tr>
 
 <tr><td>%intersectionurl%</td><td>If viewing either a tag page, or the intersection of two or more tags,  this is the URL of the page to see the intersection of the current tags,  and the tag being displayed.</td><td>http://www.site.com/tags/Monkey+Fishsticks+Foo_Bar</td></tr>
 <tr><td>%unionurl%</td><td>If viewing either a tag page, or the union of two or more tags,  this is the URL of the page to see the union of the current tags,  and the tag being displayed.</td><td>http://www.site.com/tags/Monkey|Fishsticks|Foo_Bar</td></tr>

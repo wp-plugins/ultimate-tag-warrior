@@ -206,6 +206,7 @@ function ultimate_delicious_link() {
 	$tabletags = $table_prefix . 'tags';
 	$tablepost2tag = $table_prefix . "post2tag";
 
+	if (is_numeric($post->ID)) {
 	$q = <<<SQL
 select tag from $tabletags t inner join $tablepost2tag p2t on t.id = p2t.tag_id
 where p2t.post_id = $post->ID
@@ -219,6 +220,7 @@ SQL;
 			echo "<a href=\"" . $deliciousAPIURL . "posts/add?description=" . urlencode($post->post_title) . "&url=" . urlencode(get_permalink($post->ID)) . "&tags=$taglist\">Post to del.icio.us</a>";
 	} else {
 		echo "<a href=\"http://del.icio.us/post?url=" . urlencode(get_permalink($post->ID)) . "&title=" . urlencode($post->post_title) . "\">Post to del.icio.us</a>";
+	}
 	}
 
 }
