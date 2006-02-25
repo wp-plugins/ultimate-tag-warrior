@@ -48,7 +48,7 @@ class UltimateTagWarriorCore {
 			CREATE TABLE IF NOT EXISTS $tabletags (
 			  tag_ID int(11) NOT NULL auto_increment,
 			  tag varchar(255) NOT NULL default '',
-			  PRIMARY KEY  (ID)
+			  PRIMARY KEY  (tag_ID)
 			) TYPE=MyISAM;
 SQL;
 
@@ -92,7 +92,7 @@ SQL;
 
 		if ($installed_build < 2) {
 			$alreadyChanged = $wpdb->get_var("SHOW COLUMNS FROM $tabletags LIKE 'tag_id'");
-			if ($alreadyChanged == 'tag_id') {
+			if ($alreadyChanged == 'tag_ID' || $alreadyChanged == 'tag_id') {
 				// do nothing! the column has already been changed; and trying to change it again makes an error.
 			} else {
 				$q = "ALTER TABLE $tabletags CHANGE id tag_id int(11) AUTO_INCREMENT";

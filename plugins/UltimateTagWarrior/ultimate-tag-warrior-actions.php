@@ -182,12 +182,13 @@ function ultimate_better_admin() {
 	if ($_GET["action"] == "savetagupdate") {
 		$tagid = $_GET["edittag"];
 
-		if (!is_numeric($tagid)) {
-			echo "<div class=\"error\"><p>An invalid tag ID was passed in.</p></div>";
-			return;
-		}
-
 		if ($_GET["updateaction"] == "Rename") {
+			if (!is_numeric($tagid)) {
+				echo "<div class=\"error\"><p>An invalid tag ID was passed in.</p></div>";
+				return;
+			}
+
+
 			$tag = $_GET["renametagvalue"];
 
 			$tagset = explode(",", $tag);
@@ -255,6 +256,11 @@ function ultimate_better_admin() {
 		}
 
 		if ($_GET["updateaction"] ==__("Delete Tag", $lzndomain)) {
+			if (!is_numeric($tagid)) {
+				echo "<div class=\"error\"><p>An invalid tag ID was passed in.</p></div>";
+				return;
+			}
+
 			$q = "delete from $tablepost2tag where tag_id = $tagid";
 			$wpdb->query($q);
 
@@ -504,7 +510,9 @@ function ultimate_save_tags($postID)
 
 		preg_match_all($findTagRegEx, $post->post_content, $matches);
 		foreach ($matches[2] as $match) {
-			$utw->AddTag($postID, $match);
+			foreach(explode(',', $match) as $tag) {
+				$utw->AddTag($postID, $tag);
+			}
 		}
 
 	}
