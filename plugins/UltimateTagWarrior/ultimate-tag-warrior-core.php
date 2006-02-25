@@ -742,9 +742,12 @@ SQL;
 		if (count($_relatedtagsmap) == 0) {
 			$q = "select tag.tag_id as tagid, related.tag_id as relatedid from $tablepost2tag tag inner join $tablepost2tag related on tag.post_id = related.post_id and tag.tag_id != related.tag_id";
 
-			foreach($wpdb->get_results($q) as $row) {
-				if (!is_array($_relatedtagsmap[$row->tagid]) || !in_array($row->relatedid, $_relatedtagsmap[$row->tagid])) {
-					$_relatedtagsmap[$row->tagid][] = $row->relatedid;
+			$relatedrows = $wpdb->get_results($q);
+			if ($relatedrows) {
+				foreach($relatedrows as $row) {
+					if (!is_array($_relatedtagsmap[$row->tagid]) || !in_array($row->relatedid, $_relatedtagsmap[$row->tagid])) {
+						$_relatedtagsmap[$row->tagid][] = $row->relatedid;
+					}
 				}
 			}
 		}
