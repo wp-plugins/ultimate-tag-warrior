@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: UTW2:  Like UTW1,  but with even greater justice.  Allows tagging posts in a non-external-system dependent way;  with a righteous data structure for advanced tagging-mayhem.
-Version: 3.0.1
+Version: 3.1
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -11,7 +11,7 @@ ini_set("include_path", ini_get('include_path') . PATH_SEPARATOR . ".");
 
 include_once('ultimate-tag-warrior-core.php');
 include_once('ultimate-tag-warrior-actions.php');
-load_plugin_textdomain('ultimate-tag-warrior');
+load_plugin_textdomain('ultimate-tag-warrior', 'wp-content/plugins/UltimateTagWarrior/languages');
 
 $utw = new UltimateTagWarriorCore();
 

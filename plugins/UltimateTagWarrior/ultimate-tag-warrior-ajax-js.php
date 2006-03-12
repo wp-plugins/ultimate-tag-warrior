@@ -52,15 +52,24 @@ function handleResponse() {
 
 function askYahooForKeywords() {
 	try {
-		http.open('POST','<?php echo $ajaxurl ?>?action=requestKeywords');
-		http.onreadystatechange = listYahooKeywords;
+		http.open('POST','<?php echo $ajaxurl ?>?action=requestKeywords&service=yahoo');
+		http.onreadystatechange = listKeywords;
 		http.send(escape(document.getElementById('content').value));
 	} catch (ex) {
 		alert("Something done went wrong:" + ex);
 	}
 }
 
-function listYahooKeywords() {
+function askTagyuForKeywords() {
+	try {
+		http.open('POST','<?php echo $ajaxurl ?>?action=requestKeywords&service=tagyu');
+		http.onreadystatechange = listKeywords;
+		http.send(escape(document.getElementById('content').value));
+	} catch (ex) {
+		alert("Something done went wrong:" + ex);
+	}
+}
+function listKeywords() {
     if(http.readyState == 4){
     	document.getElementById("suggestedTags").innerHTML = http.responseText;
 	}

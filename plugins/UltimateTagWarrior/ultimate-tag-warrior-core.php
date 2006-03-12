@@ -6,6 +6,8 @@ $tabletag_synonyms = $table_prefix . "tag_synonyms";
 $lzndomain = "ultimate-tag-warrior";
 $current_build = 7;
 
+require_once('ultimate-tag-warrior-actions.php');
+
 $siteurl = get_option('siteurl');
 $baseurl = get_option('utw_base_url');
 $home = get_option('home');
@@ -28,8 +30,9 @@ $notagtext = get_option('utw_no_tag_text');
 $_tagweightingcache = array();
 $_tagcache = array();
 $_posttagcache = array();
-
 $_relatedtagsmap = array();
+
+$typelimitsql = "(post_status = 'publish' OR post_status = 'static')";  // include pages
 
 class UltimateTagWarriorCore {
 
@@ -346,6 +349,54 @@ SQL;
 		add_post_meta($postID, $fieldName, $tagstr);
 	}
 
+   /**
+	* Adds any embedded tags to the tags for the post.
+	* @param int $postID the ID of a post
+	*/
+	function SaveEmbeddedTags($postID) {
+		$post = &get_post($postID);
+
+		$tags = $this->ParseEmbeddedTags($post->post_content);
+
+		if ($tags) {
+			foreach($tags as $tag) {
+				$this->AddTag($postID, $tag);
+			}
+		}
+	}
+
+   /**
+    * Parses a string looking for tags in single and multiple tag blocks.
+	* @param string $text a block of text
+	* @param array an array of tag names
+	*/
+	function ParseEmbeddedTags($text) {
+		global $starttag, $endtag, $starttags, $endtags;
+
+		$tags = array();
+
+		$findTagsRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttags) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtags) . ')/i';
+
+		preg_match_all($findTagsRegEx, $text, $matches);
+		foreach ($matches[2] as $match) {
+			foreach(explode(',', $match) as $tag) {
+				$tags[] = $tag;
+			}
+		}
+
+
+		$findTagRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttag) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtag) . ')/i';
+
+		preg_match_all($findTagRegEx, $text, $matches);
+		foreach ($matches[2] as $match) {
+			foreach(explode(',', $match) as $tag) {
+				$tags[] = $tag;
+			}
+		}
+
+		return $tags;
+	}
+
 	function DeleteTags($postID) {
 		global $tabletags, $tablepost2tag, $wpdb;
 
@@ -492,7 +543,7 @@ SQL;
 	}
 
 	function GetPostsForTag($tag) {
-		global $tabletags, $tablepost2tag, $wpdb;
+		global $tabletags, $tablepost2tag, $wpdb, $typelimitsql;
 
 		if (is_object($tag)) {
 			$tag = $tag->tag;
@@ -510,7 +561,7 @@ SQL;
 		  AND p.ID = p2t.post_id
 		  AND t.tag = '$tag'
 		  AND post_date_gmt < '$now'
-		  AND post_status = 'publish'
+		  AND $typelimitsql
 		ORDER BY post_date desc
 SQL;
 
@@ -518,7 +569,7 @@ SQL;
 	}
 
 	function GetPostsForAnyTags($tags) {
-		global $tabletags, $tablepost2tag, $wpdb;
+		global $tabletags, $tablepost2tag, $wpdb,$typelimitsql;
 
 		$taglist = "'" . str_replace("'",'',str_replace('"','',urldecode($tags[0]->tag))). "'";
 		$tagcount = count($tags);
@@ -537,7 +588,7 @@ SQL;
 			 AND p2t.post_id = p.ID
 			 AND (t.tag IN ($taglist))
 			 AND post_date_gmt < '$now'
-			 AND post_status = 'publish'
+			 AND $typelimitsql
 			 GROUP BY p2t.post_id
 			 ORDER BY t.tag ASC
 SQL;
@@ -546,7 +597,7 @@ SQL;
 	}
 
 	function GetPostsForTags($tags) {
-		global $tabletags, $tablepost2tag, $wpdb;
+		global $tabletags, $tablepost2tag, $wpdb, $typelimitsql;
 
 		$taglist = "'" . str_replace("'",'',str_replace('"','',urldecode($tags[0]->tag))). "'";
 		$tagcount = count($tags);
@@ -565,7 +616,7 @@ SQL;
 			 AND p2t.post_id = p.ID
 			 AND (t.tag IN ($taglist))
 			 AND post_date_gmt < '$now'
-			 AND post_status = 'publish'
+			 AND $typelimitsql
 			 GROUP BY p2t.post_id
 			 HAVING COUNT(p2t.post_id)=$tagcount
 			 ORDER BY t.tag ASC
@@ -680,7 +731,7 @@ SQL;
 	}
 
 	function GetRelatedTags($tags, $limit = 0) {
-		global $wpdb, $tabletags, $tablepost2tag;
+		global $wpdb, $tabletags, $tablepost2tag, $typelimitsql;
 
 		$now = current_time('mysql', 1);
 
@@ -699,7 +750,7 @@ SQL;
 			 AND p2t.post_id = p.ID
 			 AND (t.tag IN ($taglist))
 			 AND post_date_gmt < '$now'
-			 AND post_status = 'publish'
+			 AND $typelimitsql
 			 GROUP BY p2t.post_id HAVING COUNT(p2t.post_id)=$tagcount
 			 ORDER BY t.tag ASC
 SQL;
@@ -726,7 +777,7 @@ SQL;
 		AND t.tag NOT IN ($taglist)
 		AND t.tag_id = p2t.tag_id
 		AND post_date_gmt < '$now'
-		AND post_status = 'publish'
+		AND $typelimitsql
 		GROUP BY p2t.tag_id
 		ORDER BY count DESC, t.tag ASC
 		$limitclause
@@ -760,7 +811,7 @@ SQL;
 	}
 
 	function GetRelatedPosts($tags, $limit = 0) {
-		global $wpdb, $tabletags, $tablepost2tag, $post;
+		global $wpdb, $tabletags, $tablepost2tag, $post, $typelimitsql;
 
 		$now = current_time('mysql', 1);
 
@@ -787,7 +838,7 @@ SQL;
 			 AND p2t.post_id = p.ID
 			 AND (t.tag IN ($taglist))
 			 AND post_date_gmt < '$now'
-			 AND post_status = 'publish'
+			 AND $typelimitsql
 			 $notclause
 			 GROUP BY p2t.post_id
 			 ORDER BY cnt DESC, post_date_gmt DESC
@@ -813,7 +864,7 @@ SQL;
 	}
 
 	function GetPopularTags($maximum, $order, $direction) {
-		global $wpdb, $tabletags, $tablepost2tag;
+		global $wpdb, $tabletags, $tablepost2tag, $typelimitsql;
 
 		if ($order <> "tag" && $order <> "count") { $order = "tag"; }
 		if ($direction <> "asc" && $direction <> "desc") { $direction = "asc"; }
@@ -825,7 +876,7 @@ SQL;
 			from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id
 							  inner join $wpdb->posts p on p2t.post_id = p.ID
 			 WHERE post_date_gmt < '$now'
-			 AND post_status = 'publish'
+			 AND $typelimitsql
 			group by t.tag
 			having count > 0
 			order by $order $direction
@@ -838,7 +889,7 @@ SQL;
 	}
 
 	function GetWeightedTags($order, $direction, $limit = 150, $date_sensitive = false) {
-		global $wpdb, $tabletags, $tablepost2tag, $_tagweightingcache;
+		global $wpdb, $tabletags, $tablepost2tag, $_tagweightingcache, $typelimitsql;
 
 		if ($order <> "tag" && $order <> "weight") { $order = "weight"; }
 		if ($direction <> "asc" && $direction <> "desc") { $direction = "desc"; }
@@ -880,7 +931,7 @@ SQL;
 			from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id
 							  inner join $wpdb->posts p on p2t.post_id = p.ID
 			 WHERE post_date_gmt < '$now'
-			 AND post_status = 'publish'
+			 AND $typelimitsql
 			 $dateclause
 			group by t.tag
 			$orderclause
@@ -959,9 +1010,9 @@ SQL;
 	}
 
 	function GetDistinctTagCount($date_sensitive=false) {
-		global $wpdb, $tablepost2tag;
+		global $wpdb, $tablepost2tag, $typelimitsql;
 
-		$sql = "select count(*) from $tablepost2tag p2t inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish'";
+		$sql = "select count(*) from $tablepost2tag p2t inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND " . $typelimitsql;
 
 		if ($date_sensitive) {
 			$sql .= " " . $this->GetDateSQL();
@@ -970,9 +1021,9 @@ SQL;
 	}
 
 	function GetMostPopularTagCount($date_sensitive = false) {
-		global $wpdb, $tabletags, $tablepost2tag;
+		global $wpdb, $tabletags, $tablepost2tag, $typelimitsql;
 
-		$sql = "select count(p2t.post_id) cnt from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND post_status = 'publish'";
+		$sql = "select count(p2t.post_id) cnt from $tabletags t inner join $tablepost2tag p2t on t.tag_id = p2t.tag_id inner join $wpdb->posts p on p2t.post_id = p.ID WHERE post_date_gmt < '" . current_time('mysql', 1) . "' AND " . $typelimitsql;
 
 		if ($date_sensitive) {
 			$sql .= " " . $this->GetDateSQL();
@@ -1069,6 +1120,7 @@ SQL;
 			}
 		}
 
+		$tagset = array_unique($tagset);
 
 		$iconformat = '';
 		foreach($iconsettings as $iconsetting) {
@@ -1111,6 +1163,7 @@ SQL;
 			$format = str_replace('%taglink%', "<a href=\"$home$baseurl$tag_name_url$trailing\" rel=\"tag\">$tag_display</a>", $format);
 
 			$rssurl = "$home$baseurl$tag_name_url/feed/rss2";
+
 			$tagseturl = "$home$baseurl" . implode('+', $tagset) . 	"+$tag_name_url$trailing";
 			$unionurl = "$home$baseurl" . implode('|', $tagset) . 	"|$tag_name_url$trailing";
 
@@ -1138,17 +1191,7 @@ SQL;
 
 		if (strpos($format, '%relatedtagids%') !== FALSE) {
 			$_relatedtagsmap = $this->GetRelatedTagsMap();
-			/*
-			$tagarr = array();
-			$tagarr[] = $tag;
-			$related = $this->GetRelatedTags($tagarr);
 
-			if ($related) {
-				foreach($related as $relatedtag) {
-					$idlist .= $relatedtag->tag_id  . ',';
-				}
-			} */
-//			print_r($_relatedtagsmap[$tag->tag_id]);
 			if ($_relatedtagsmap[$tag->tag_id]) {
 				$format = str_replace('%relatedtagids%', implode(',',$_relatedtagsmap[$tag->tag_id]), $format);
 			} else {

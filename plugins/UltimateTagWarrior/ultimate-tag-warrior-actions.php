@@ -12,7 +12,7 @@ $endtags = "[/tags]";
 
 $embedtags = get_option('utw_use_embedded_tags');
 
-$embeddedtagformat = '%taglink%';
+$embeddedtagformat = array('first'=>'%taglink%', 'default'=>', %taglink%');
 
 class UltimateTagWarriorActions {
 
@@ -281,6 +281,14 @@ function ultimate_better_admin() {
 			$utw->TidyTags();
 			echo "<div class=\"updated\"><p>Tags have been tidied</p></div>";
 		}
+		if ($_GET["updateaction"] == __("Import Embedded Tags", $lzndomain)) {
+			$postids = $wpdb->get_results("SELECT id FROM $wpdb->posts");
+			foreach ($postids as $postid) {
+				$utw->SaveEmbeddedTags($postid->id);
+			}
+
+			echo "<div class=\"updated\"><p>Embedded tags have been imported</p></div>";
+		}
 		if ($_GET["updateaction"] == __("Convert Categories to Tags", $lzndomain)) {
 			$postids = $wpdb->get_results("SELECT id FROM $wpdb->posts");
 			foreach ($postids as $postid) {
@@ -375,6 +383,10 @@ OPTIONS;
 	echo '<fieldset class="options"><legend>' . __('Convert Categories to Tags', $lzndomain) . '</legend>';
 	_e('<p>Again.. very scary.. back up your database first!</p>');
 	echo '<input type="submit" name="updateaction" onClick="javascript:return(confirm(\'' . __('Are you sure you want to convert categories to tags?', $lzndomain) . '\'))" value="' . __('Convert Categories to Tags', $lzndomain) . '"></fieldset>';
+
+	echo '<fieldset class="options"><legend>' . __("Import Embedded Tags", $lzndomain) . '</legend>';
+	_e('<p>Also very scary.. back up your database first!</p>');
+	echo '<input type="submit" name="updateaction" onClick="javascript:return(confirm(\'' . __('Are you sure you want to import embedded tags?', $lzndomain) . '\'))" value="' . __("Import Embedded Tags", $lzndomain) . '"></fieldset>';
 
 	echo '<fieldset class="options"><legend>' . __('Custom Fields', $lzndomain) . '</legend>';
 	_e('<p>This pair of actions allow the moving of tag information from custom fields into the tag structure,  and moving the tag structure into a custom field.</p><p>When moving information from the custom field to the tag structure,  the existing tags are retained.  However, copying the tags to the custom field <strong>will overwrite the existing values</strong>.  To retain the existing values,  do an import before the export.</p><p><strong>This stuff seems to work,  but backup your database before trying,  just in case.</strong></p>', $lzndomain);
@@ -482,7 +494,7 @@ $_POST['tagset'] the list of tags.
 */
 function ultimate_save_tags($postID)
 {
-	global $wpdb, $tableposts, $table_prefix, $utw, $starttag, $endtag, $starttags, $endtags, $embedtags;
+	global $wpdb, $tableposts, $table_prefix, $utw, $starttag, $endtag, $starttags, $endtags, $embedtags, $utw;
 
 	$tags = $wpdb->escape($_POST['tagset']);
 	$tags = explode(',',$tags);
@@ -496,25 +508,13 @@ function ultimate_save_tags($postID)
 	if ($embedtags == 'yes') {
 		$post = &get_post($postID);
 
-		$findTagsRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttags) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtags) . ')/i';
+		$tags = $utw->ParseEmbeddedTags($post->post_content);
 
-		preg_match_all($findTagsRegEx, $post->post_content, $matches);
-		foreach ($matches[2] as $match) {
-			foreach(explode(',', $match) as $tag) {
+		if ($tags) {
+			foreach($tags as $tag) {
 				$utw->AddTag($postID, $tag);
 			}
 		}
-
-
-		$findTagRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttag) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtag) . ')/i';
-
-		preg_match_all($findTagRegEx, $post->post_content, $matches);
-		foreach ($matches[2] as $match) {
-			foreach(explode(',', $match) as $tag) {
-				$utw->AddTag($postID, $tag);
-			}
-		}
-
 	}
 
     return $postID;
@@ -587,11 +587,12 @@ function ultimate_display_tag_widget() {
 		}
 	}
 
-  $suggestions .='<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions"/>';
+  $suggestions .='<input type="button" onClick="askTagyuForKeywords()" value="Get Keyword Suggestions From Tagyu"/>';
+  $suggestions .='<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions From Yahoo"/>';
   $suggestions .='<div id="suggestedTags"></div>';
 
   echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tags (comma separated list)</h3><div class="dbx-content">' . $widget . '</div></fieldset>';
-  echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tag Suggestions (Courtesy of <a href="http://www.tagyu.com">Tagyu</a>)</h3><div class="dbx-content">' . $suggestions . '</div></fieldset>';
+  echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tag Suggestions (Courtesy of <a href="http://www.tagyu.com">Tagyu</a>/<a href="http://www.yahoo.com">Yahoo!</a>)</h3><div class="dbx-content">' . $suggestions . '</div></fieldset>';
 
 
 }
@@ -607,7 +608,21 @@ function regExEscape($str) {
 
 function replaceTagWithLink($matches) {
 	global $utw, $embeddedtagformat;
-	$tag = $utw->GetTagsForTagString("'" . str_replace(' ','-',strtolower($matches[2])) . "'");
+
+	$tags = explode(',',$matches[2]);
+
+	$tagstr = '';
+	$first = true;
+	foreach ($tags as $tag) {
+		if ($first === false) {
+			$tagstr .= ',';
+		} else {
+			$first = false;
+		}
+		$tagstr .= "'" . str_replace(' ','-',strtolower(trim($tag))) . "'";
+	}
+
+	$tag = $utw->GetTagsForTagString($tagstr);
 
 	return $utw->FormatTags($tag, $embeddedtagformat);
 }
@@ -620,7 +635,7 @@ function ultimate_the_content_filter($thecontent='') {
 
 	$tags = $utw->GetTagsForPost($post->ID);
 
-	$findTagRegEx = '/(' . UltimateTagWarriorActions::regExEscape($tagStartMarker) . '(.*?)' . UltimateTagWarriorActions::regExEscape($tagEndMarker) . ')/i';
+	$findTagRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttag) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtag) . ')/i';
 	$findTagsRegEx = '/(' . UltimateTagWarriorActions::regExEscape($starttags) . '(.*?)' . UltimateTagWarriorActions::regExEscape($endtags) . ')/i';
 
 	if ($embedtags == 'yes') {
