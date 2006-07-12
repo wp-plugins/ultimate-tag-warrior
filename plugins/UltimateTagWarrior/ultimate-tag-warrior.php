@@ -2,8 +2,8 @@
 /*
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
-Description: UTW2:  Like UTW1,  but with even greater justice.  Allows tagging posts in a non-external-system dependent way;  with a righteous data structure for advanced tagging-mayhem.
-Version: 3.1
+Description: Ultimate Tag Warrior is a tagging pluging, that's heavy on tag visualisation.
+Version: 3.14
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -87,6 +87,16 @@ function UTW_ShowTimeSensitiveWeightedTagSetAlphabetical($formattype, $format=""
 	$format = $utw->GetFormat($formattype, $format);
 
 	echo $utw->FormatTags($utw->GetWeightedTags("tag", "asc", $limit, true), $format);
+}
+
+function UTW_ShowMetaKeywords() {
+	global $utw, $post;
+
+	if (is_tag()) {
+		echo '<meta name="keywords" content="' . $utw->FormatTags($utw->GetCurrentTagSet(),array('first'=>'%tagdisplay%', 'default'=> ', %tagdisplay%')) . '" />';
+    } else if (is_single()) {
+	    echo '<meta name="keywords" content="' . $utw->FormatTags($utw->GetTagsForPost($post->ID),array('first'=>'%tagdisplay%', 'default'=> ', %tagdisplay%')) . '" />';
+    }
 }
 
 function UTW_ShowRSSFeedIcon() {

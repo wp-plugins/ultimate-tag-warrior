@@ -10,20 +10,24 @@ function createRequestObject() {
     return ro;
 }
 
-var http = createRequestObject();
-
 function sndReq(action, tag, post, format) {
+	var http = createRequestObject();
+
     http.open('get', '<?php echo $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
     http.onreadystatechange = handleResponse;
     http.send(null);
 }
 
 function sndReqNoResp(action, tag, post) {
+	var http = createRequestObject();
+
     http.open('get', '<?php echo $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post);
     http.send(null);
 }
 
 function sndReqGenResp(action, tag, post, format) {
+	var http = createRequestObject();
+
     http.open('get', '<?php echo $ajaxurl ?>?action='+action+'&tag='+tag+'&post='+post+'&format='+format);
     http.onreadystatechange = handleResponseGeneric;
     http.send(null);
@@ -51,9 +55,15 @@ function handleResponse() {
 }
 
 function askYahooForKeywords() {
+	var http = createRequestObject();
+
 	try {
-		http.open('POST','<?php echo $ajaxurl ?>?action=requestKeywords&service=yahoo');
-		http.onreadystatechange = listKeywords;
+		http.open('POST','<?php echo $ajaxurl ?>?action=requestKeywords&service=yahoo&content=' + document.getElementById("content").value);
+		http.onreadystatechange = function () {
+			if(http.readyState == 4){
+				document.getElementById("yahooSuggestedTags").innerHTML = http.responseText;
+			}
+		};
 		http.send(escape(document.getElementById('content').value));
 	} catch (ex) {
 		alert("Something done went wrong:" + ex);
@@ -61,16 +71,17 @@ function askYahooForKeywords() {
 }
 
 function askTagyuForKeywords() {
+	var http = createRequestObject();
+
 	try {
-		http.open('POST','<?php echo $ajaxurl ?>?action=requestKeywords&service=tagyu');
-		http.onreadystatechange = listKeywords;
+		http.open('POST','<?php echo $ajaxurl ?>?action=requestKeywords&service=tagyu&content=' + document.getElementById("content").value);
+		http.onreadystatechange = function () {
+			if(http.readyState == 4){
+				document.getElementById("tagyuSuggestedTags").innerHTML = http.responseText;
+			}
+		};
 		http.send(escape(document.getElementById('content').value));
 	} catch (ex) {
 		alert("Something done went wrong:" + ex);
-	}
-}
-function listKeywords() {
-    if(http.readyState == 4){
-    	document.getElementById("suggestedTags").innerHTML = http.responseText;
 	}
 }

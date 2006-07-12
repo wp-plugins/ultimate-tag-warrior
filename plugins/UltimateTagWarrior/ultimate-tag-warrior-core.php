@@ -204,6 +204,8 @@ SQL;
 			$q = "delete from $tablepost2tag where post_id = $postID and tag_id not in ($taglist)";
 		}
 		$wpdb->query($q);
+
+		$this->ClearTagPostMeta($postID);
 	}
 
 	/* Adds the specified tag to the post corresponding with the post ID */
@@ -235,6 +237,7 @@ SQL;
 				$wpdb->query($q);
 			}
 		}
+		$this->ClearTagPostMeta($postID);
 	}
 
 	/* Adds the specified tag to the post corresponding with the post ID */
@@ -260,6 +263,7 @@ SQL;
 				$q = "DELETE FROM $tabletags WHERE tag_id = $tagid";
 				$wpdb->query($q);
 			}
+			$this->ClearTagPostMeta($postID);
 		}
 	}
 
@@ -500,6 +504,7 @@ SQL;
 				}
 			}
 		}
+		$this->ClearAllTagPostMeta();
 	}
 
 
@@ -535,7 +540,12 @@ SQL;
 		if ($postID) {
 			$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
 
-			$tags = $wpdb->get_results($q);
+			$tags = get_post_meta($postID, '_utw_tags_' . $limit, true); // check the postmeta cache... this is already in memory!
+			if ( false == $tags ) {
+				$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
+				$tags = $wpdb->get_results($q);
+				add_post_meta($postID, '_utw_tags_' . $limit, $tags);
+			}
 			$_posttagcache[$postID . ':' . $limit] = $tags;
 
 			return $tags;
@@ -590,7 +600,7 @@ SQL;
 			 AND post_date_gmt < '$now'
 			 AND $typelimitsql
 			 GROUP BY p2t.post_id
-			 ORDER BY t.tag ASC
+			 ORDER BY p.post_title ASC
 SQL;
 
 		   return ($wpdb->get_results($q));
@@ -619,7 +629,7 @@ SQL;
 			 AND $typelimitsql
 			 GROUP BY p2t.post_id
 			 HAVING COUNT(p2t.post_id)=$tagcount
-			 ORDER BY t.tag ASC
+			 ORDER BY p.post_title ASC
 SQL;
 
 		   return ($wpdb->get_results($q));
@@ -634,6 +644,18 @@ SQL;
 		} else {
 			return false;
 		}
+	}
+
+	function ClearTagPostMeta($postid=0) {
+		global $wpdb;
+		$postid = (int) $postid;
+		$wpdb->query("DELETE FROM $wpdb->postmeta WHERE meta_key LIKE '_utw_tags_%' AND post_id = '$postid'");
+		return $postid;
+	}
+
+	function ClearAllTagPostMeta() {
+		global $wpdb;
+		$wpdb->query("DELETE FROM $wpdb->postmeta WHERE meta_key LIKE '_utw_tags_%'");
 	}
 
 	function ClearSynonymsForTag($tagid="") {
@@ -1426,9 +1448,11 @@ CSS;
 			$predefinedFormats["weightedlongtail"] = array("pre"=>"$css<ol class=\"longtail\">", "default"=>"<li><a href=\"%tagurl%\" title=\"%tagdisplay%\"><div style=\"height:%tagrelweightint%%\">&#160;</div></a></li>", "post"=>"</ol>");;
 			$predefinedFormats["weightedlongtailvertical"] = array("pre"=>"<div class=\"longtailvert\">", "default"=>'<div style="background-color:%tagrelweightrankcolor%; width:%tagrelweightint%%; \"><a href="%tagurl%" title="%tagdisplay% (%tagcount%)" style="display:block; ">%tagdisplay%</a></div>', "post"=>"</div>");
 			$predefinedFormats["coloredtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
-			$predefinedFormats["sizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%\">%tagdisplay%</a> ");
+			$predefinedFormats["sizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightrankfontsize%\">%tagdisplay%</a> ");
 			$predefinedFormats["coloredsizedtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
 			$predefinedFormats["sizedcoloredtagcloud"] = array("default"=>"<a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a> ");
+
+			$predefinedFormats["tagcloudlist"] = array("pre"=>"<ol>","default"=>"<li><a href=\"%tagurl%\" title=\"%tagdisplay% (%tagcount%)\" style=\"font-size:%tagrelweightfontsize%; color:%tagrelweightrankcolor%\">%tagdisplay%</a></li>", "post"=>"</ol>");
 
 			$predefinedFormats["invisiblecommalist"] = array ("default"=>", %taglink%", "first"=>"<span style=\"display:none\">%taglink%", "none"=>$notagtext,'post'=>'</span>' );
 

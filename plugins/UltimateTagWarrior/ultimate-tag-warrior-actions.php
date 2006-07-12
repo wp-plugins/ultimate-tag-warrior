@@ -65,6 +65,10 @@ function utw_options() {
 	$configValues[] = array("setting"=>"utw_base_url", "label"=>__("Base url", $lzndomain),  "type"=>"string");
 	$configValues[] = array("setting"=>"utw_trailing_slash", 'label'=>__("Include trailing slash on tag urls", $lzndomain), 'type'=>'boolean');
 
+	$configValues[] = array("setting"=>"", "label"=>__("Meta Keywords", $lzndomain),  "type"=>"label");
+	$configValues[] = array("setting"=>"", "value"=>__("When enabled, meta keywords will be included in the header of tag pages, and single post pages.  These keywords are sometimes used by search engines.", $lzndomain),  "type"=>"help");
+	$configValues[] = array("setting"=>"utw_show_meta_keywords", 'label'=>__("Include meta keywords", $lzndomain), 'type'=>'boolean');
+
 	$configValues[] = array("setting"=>"", "label"=>__("Embedded Tags", $lzndomain),  "type"=>"label");
 	$configValues[] = array("setting"=>"", "value"=>__("Embedded tags are tags which are found in the content body of posts.  They use the format of the <a href=\"http://www.broobles.com/scripts/simpletags/\">Simple Tags</a> plugin, which is as good a choice as any.  Tags that are [tag]like this[/tag] will turn into local tag links in the content,  and will be added to the list of tags for the post and [tags]like this, or this[/tags] will be treated as a list of tags for the post, and be added to the list of tags for the post,  and won't display when you view the post.", $lzndomain),  "type"=>"help");
 	$configValues[] = array("setting"=>"utw_use_embedded_tags", "label"=>__("Use embedded tags", $lzndomain),  "type"=>"boolean");
@@ -239,6 +243,7 @@ function ultimate_better_admin() {
 				$q = "delete from $tabletags where tag_id = $tagid";
 				$wpdb->query($q);
 			}
+			$this->ClearAllTagPostMeta();
 			echo "<div class=\"updated\"><p>Tags have been updated.</p></div>";
 		}
 
@@ -266,7 +271,7 @@ function ultimate_better_admin() {
 
 			$q = "delete from $tabletags where tag_id = $tagid";
 			$wpdb->query($q);
-
+			$this->ClearAllTagPostMeta();
 			echo "<div class=\"updated\"><p>Tag has been deleted.</p></div>";
 		}
 		if ($_GET["updateaction"] == __("Force Reinstall", $lzndomain)) {
@@ -474,6 +479,11 @@ function ultimate_tag_templates() {
 		exit;
 	} else 	if (get_query_var("tag") != "") {
 		ultimate_get_posts();
+
+		if (is_feed()) {
+				do_feed();
+				return;
+		}
 		if (file_exists(TEMPLATEPATH . "/tag.php")) {
 			if ( $_GET["feed"] == '') {
 				include(TEMPLATEPATH . '/tag.php');
@@ -503,6 +513,7 @@ function ultimate_save_tags($postID)
 
 	if (get_option('utw_include_categories_as_tags') == "yes") {
 		$utw->SaveCategoriesAsTags($postID);
+		$utw->ClearTagPostMeta($postID);
 	}
 
 	if ($embedtags == 'yes') {
@@ -589,7 +600,7 @@ function ultimate_display_tag_widget() {
 
   $suggestions .='<input type="button" onClick="askTagyuForKeywords()" value="Get Keyword Suggestions From Tagyu"/>';
   $suggestions .='<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions From Yahoo"/>';
-  $suggestions .='<div id="suggestedTags"></div>';
+  $suggestions .='<div id="tagyuSuggestedTags"></div><div id="yahooSuggestedTags"></div>';
 
   echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tags (comma separated list)</h3><div class="dbx-content">' . $widget . '</div></fieldset>';
   echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tag Suggestions (Courtesy of <a href="http://www.tagyu.com">Tagyu</a>/<a href="http://www.yahoo.com">Yahoo!</a>)</h3><div class="dbx-content">' . $suggestions . '</div></fieldset>';
@@ -736,6 +747,12 @@ function ultimate_add_ajax_javascript() {
 
 }
 
+function ultimate_add_meta_keywords() {
+	if (get_option('utw_show_meta_keywords') == 'yes') {
+		UTW_ShowMetaKeywords();
+	}
+}
+
 function ultimate_posts_join($join) {
 	if (get_query_var("tag") != "") {
 		global $table_prefix, $wpdb;
@@ -832,5 +849,6 @@ add_filter('the_content', array('UltimateTagWarriorActions', 'ultimate_the_conte
 add_filter('the_category_rss', array('UltimateTagWarriorActions', 'ultimate_add_tags_to_rss'));
 
 add_filter('wp_head', array('UltimateTagWarriorActions', 'ultimate_add_ajax_javascript'));
+add_filter('wp_head', array('UltimateTagWarriorActions', 'ultimate_add_meta_keywords'));
 add_filter('admin_head', array('UltimateTagWarriorActions', 'ultimate_add_ajax_javascript'));
 ?>

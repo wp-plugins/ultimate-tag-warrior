@@ -59,14 +59,15 @@ switch($action) {
 
 		$service = $_REQUEST['service'];
 
-		switch ($service) {
+		$content = $_REQUEST['content'];
 
+		switch ($service) {
 		case "tagyu":
 			$keywordAPISite = "tagyu.com";
 			$keywordAPIUrl = "/api/suggest/";
 			$pattern = "/(<tag.*?>)(.*?)<\/tag>/i"; //.*<//tag>)/i";
 
-			$noUnicode = preg_replace("/%u[0-9A-F]{4}/i","",$HTTP_RAW_POST_DATA);
+			$noUnicode = preg_replace("/%u[0-9A-F]{4}/i","",$content);
 
 			$data = urlencode(strip_tags(urldecode($noUnicode)));
 
@@ -87,7 +88,7 @@ switch($action) {
 			$pattern = "/(<Result>)(.*?)<\/Result>/i";
 			$appID = "wp-UltimateTagWarrior";
 			$bypost = true;
-			$data = "appid=" . $appID . "&context=" . $HTTP_RAW_POST_DATA;
+			$data = "appid=" . $appID . "&context=" . $content;
 			break;
 		}
 
