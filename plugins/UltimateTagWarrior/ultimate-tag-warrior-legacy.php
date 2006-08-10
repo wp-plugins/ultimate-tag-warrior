@@ -171,7 +171,7 @@ it's probably better to do it this way for anyone else who is running older mySQ
 */
 
 function ultimate_show_related_tags($pre = "<li>", $post = "</li>", $notags="None") {
-	global $wpdb, $table_prefix, $posts, $table_prefix, $tableposts, $id, $utw;
+	global $wpdb, $table_prefix, $posts, $table_prefix, $id, $utw;
 	$tabletags = $table_prefix . 'tags';
 	$tablepost2tag = $table_prefix . "post2tag";
 

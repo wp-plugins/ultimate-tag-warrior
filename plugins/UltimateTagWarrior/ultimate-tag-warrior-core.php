@@ -538,13 +538,14 @@ SQL;
 		}
 
 		if ($postID) {
-			$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
-
 			$tags = get_post_meta($postID, '_utw_tags_' . $limit, true); // check the postmeta cache... this is already in memory!
+			print_r($tags);
 			if ( false == $tags ) {
 				$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
 				$tags = $wpdb->get_results($q);
-				add_post_meta($postID, '_utw_tags_' . $limit, $tags);
+				if (count($tags) > 0) {
+					add_post_meta($postID, '_utw_tags_' . $limit, $tags);
+				}
 			}
 			$_posttagcache[$postID . ':' . $limit] = $tags;
 
@@ -1525,7 +1526,7 @@ CSS;
 Retrieves the posts for the tags specified in get_query_var("tag").  Gets the intersection when there are multiple tags.
 */
 function ultimate_get_posts() {
-	global $wpdb, $table_prefix, $posts, $table_prefix, $tableposts, $id, $wp_query, $request, $utw;
+	global $wpdb, $table_prefix, $posts, $id, $wp_query, $request, $utw;
 	$tabletags = $table_prefix . 'tags';
 	$tablepost2tag = $table_prefix . "post2tag";
 
@@ -1549,7 +1550,7 @@ function ultimate_get_posts() {
 	$tagcount = count($tags);
 
 	if (strpos($request, "HAVING COUNT(ID)") == false && !$or_query) {
-		$request = preg_replace("/GROUP BY +$tableposts.ID /", "GROUP BY $tableposts.ID HAVING COUNT(ID) = $tagcount ", $request);
+		$request = preg_replace("/GROUP BY +$wpdb->posts.ID /", "GROUP BY $wpdb->posts.ID HAVING COUNT(ID) = $tagcount ", $request);
 	}
 
 	$posts = $wpdb->get_results($request);

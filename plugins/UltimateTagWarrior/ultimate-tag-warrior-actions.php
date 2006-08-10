@@ -49,7 +49,7 @@ function ultimate_rewrite_rules($rules) {
 }
 
 function utw_options() {
-	global $lzndomain, $utw, $wpdb, $tableposts, $tabletags, $tablepost2tag, $install_directory;
+	global $lzndomain, $utw, $wpdb, $tabletags, $tablepost2tag, $install_directory;
 
 	$siteurl = get_option('siteurl');
 
@@ -177,7 +177,7 @@ CONFIGFOOTER;
 }
 
 function ultimate_better_admin() {
-	global $lzndomain, $utw, $wpdb, $tableposts, $tabletags, $tablepost2tag, $install_directory;
+	global $lzndomain, $utw, $wpdb, $tabletags, $tablepost2tag, $install_directory;
 
 	$siteurl = get_option('siteurl');
 
@@ -504,7 +504,7 @@ $_POST['tagset'] the list of tags.
 */
 function ultimate_save_tags($postID)
 {
-	global $wpdb, $tableposts, $table_prefix, $utw, $starttag, $endtag, $starttags, $endtags, $embedtags, $utw;
+	global $wpdb, $table_prefix, $utw, $starttag, $endtag, $starttags, $endtags, $embedtags, $utw;
 
 	$tags = $wpdb->escape($_POST['tagset']);
 	$tags = explode(',',$tags);
@@ -576,7 +576,7 @@ function ultimate_display_tag_widget() {
 	if ($post) {
 		$widget .= stripslashes(str_replace('&', '&amp;', $utw->FormatTags($utw->GetTagsForPost($postid, $limit), array("first"=>'%tag%', 'default'=>', %tag%'))));
 	}
-	$widget .="\" size=\"100\"><br />";
+	$widget .="\" style=\"width:98%\"><br />";
 
 	$widgetToUse = get_option('utw_always_show_links_on_edit_screen');
 
