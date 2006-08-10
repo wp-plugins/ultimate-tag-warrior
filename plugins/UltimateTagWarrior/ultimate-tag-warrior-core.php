@@ -539,7 +539,6 @@ SQL;
 
 		if ($postID) {
 			$tags = get_post_meta($postID, '_utw_tags_' . $limit, true); // check the postmeta cache... this is already in memory!
-			print_r($tags);
 			if ( false == $tags ) {
 				$q = "SELECT DISTINCT t.tag FROM $tabletags t INNER JOIN $tablepost2tag p2t ON p2t.tag_id = t.tag_id INNER JOIN $wpdb->posts p ON p2t.post_id = p.ID AND p.ID=$postID ORDER BY t.tag ASC $limitclause";
 				$tags = $wpdb->get_results($q);
