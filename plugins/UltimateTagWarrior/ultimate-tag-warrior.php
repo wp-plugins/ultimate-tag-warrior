@@ -3,14 +3,23 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: Ultimate Tag Warrior is a tagging pluging, that's heavy on tag visualisation.
-Version: 3.141
+Version: 3.1415
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
-ini_set("include_path", ini_get('include_path') . PATH_SEPARATOR . ".");
 
-include_once('ultimate-tag-warrior-core.php');
-include_once('ultimate-tag-warrior-actions.php');
+/* Maybe you'll need this.. maybe you won't...
+$path = ini_get('include_path');
+if (!(substr($path, strlen( $path ) - strlen(PATH_SEPARATOR)) === PATH_SEPARATOR)) {
+	$path .= PATH_SEPARATOR;
+}
+$path .= $_SERVER['DOCUMENT_ROOT'] . "/wp-content/plugins/UltimateTagWarrior";
+ini_set("include_path", $path);
+*/
+
+require_once('ultimate-tag-warrior-core.php');
+require_once('ultimate-tag-warrior-actions.php');
+
 load_plugin_textdomain('ultimate-tag-warrior', 'wp-content/plugins/UltimateTagWarrior/languages');
 
 $utw = new UltimateTagWarriorCore();

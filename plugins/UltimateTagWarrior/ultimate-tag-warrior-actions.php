@@ -1,8 +1,4 @@
 <?php
-ini_set("include_path", ini_get('include_path') . PATH_SEPARATOR . ".");
-require_once('ultimate-tag-warrior-core.php');
-$utw = new UltimateTagWarriorCore();
-
 $install_directory = "/UltimateTagWarrior";
 $starttag = "[tag]";
 $endtag = "[/tag]";
@@ -35,8 +31,6 @@ function ultimate_rewrite_rules($rules) {
 		$baseurl = get_option("utw_base_url");
 
 		global $wp_rewrite;
-
-		$tagbase = substr($baseurl, 1, strlen($baseurl) - 2);
 
 		$wp_rewrite->add_rewrite_tag('%tag%', '(.*)', 'tag=');
 
@@ -243,7 +237,7 @@ function ultimate_better_admin() {
 				$q = "delete from $tabletags where tag_id = $tagid";
 				$wpdb->query($q);
 			}
-			$this->ClearAllTagPostMeta();
+			$utw->ClearAllTagPostMeta();
 			echo "<div class=\"updated\"><p>Tags have been updated.</p></div>";
 		}
 
@@ -271,7 +265,7 @@ function ultimate_better_admin() {
 
 			$q = "delete from $tabletags where tag_id = $tagid";
 			$wpdb->query($q);
-			$this->ClearAllTagPostMeta();
+			$utw->ClearAllTagPostMeta();
 			echo "<div class=\"updated\"><p>Tag has been deleted.</p></div>";
 		}
 		if ($_GET["updateaction"] == __("Force Reinstall", $lzndomain)) {
@@ -597,13 +591,11 @@ function ultimate_display_tag_widget() {
 			$widget .= $utw->FormatTags($utw->GetPopularTags(-1, 'tag', 'asc'), $format);
 		}
 	}
-
-  $suggestions .='<input type="button" onClick="askTagyuForKeywords()" value="Get Keyword Suggestions From Tagyu"/>';
   $suggestions .='<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions From Yahoo"/>';
-  $suggestions .='<div id="tagyuSuggestedTags"></div><div id="yahooSuggestedTags"></div>';
+  $suggestions .='<div id="yahooSuggestedTags"></div>';
 
   echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tags (comma separated list)</h3><div class="dbx-content">' . $widget . '</div></fieldset>';
-  echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tag Suggestions (Courtesy of <a href="http://www.tagyu.com">Tagyu</a>/<a href="http://www.yahoo.com">Yahoo!</a>)</h3><div class="dbx-content">' . $suggestions . '</div></fieldset>';
+  echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tag Suggestions (Courtesy of <a href="http://www.yahoo.com">Yahoo!</a>)</h3><div class="dbx-content">' . $suggestions . '</div></fieldset>';
 
 
 }

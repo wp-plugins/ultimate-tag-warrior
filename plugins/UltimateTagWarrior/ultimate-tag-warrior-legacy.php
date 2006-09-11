@@ -9,7 +9,12 @@ Version: 1.3 Legacy
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
-ini_set("include_path", ini_get('include_path') . PATH_SEPARATOR . ".");
+$path = ini_get('include_path');
+if (!(substr($path, strlen( $path ) - strlen(PATH_SEPARATOR)) === PATH_SEPARATOR)) {
+	$path .= PATH_SEPARATOR;
+}
+$path .= $_SERVER['DOCUMENT_ROOT'] . "/wp-content/plugins/UltimateTagWarrior";
+ini_set("include_path", $path);
 
 include_once('ultimate-tag-warrior-core.php');
 include_once('ultimate-tag-warrior-actions.php');

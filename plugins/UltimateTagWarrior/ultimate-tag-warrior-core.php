@@ -6,8 +6,6 @@ $tabletag_synonyms = $table_prefix . "tag_synonyms";
 $lzndomain = "ultimate-tag-warrior";
 $current_build = 7;
 
-require_once('ultimate-tag-warrior-actions.php');
-
 $siteurl = get_option('siteurl');
 $baseurl = get_option('utw_base_url');
 $home = get_option('home');
