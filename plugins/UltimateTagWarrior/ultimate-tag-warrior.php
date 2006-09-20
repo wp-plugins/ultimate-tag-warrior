@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: Ultimate Tag Warrior is a tagging pluging, that's heavy on tag visualisation.
-Version: 3.1415
+Version: 3.14159
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */

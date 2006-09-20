@@ -35,9 +35,9 @@ function ultimate_rewrite_rules($rules) {
 		$wp_rewrite->add_rewrite_tag('%tag%', '(.*)', 'tag=');
 
 		// without trailing slash
-		$rules += $wp_rewrite->generate_rewrite_rules($baseurl . '%tag%');
+		$rules = $wp_rewrite->generate_rewrite_rules($baseurl . '%tag%') + $rules;
 		// with trailing slash
-		$rules += $wp_rewrite->generate_rewrite_rules($baseurl . '%tag%/');
+		$rules = $wp_rewrite->generate_rewrite_rules($baseurl . '%tag%/') + $rules;
 	}
 	return $rules;
 }
