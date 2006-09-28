@@ -546,6 +546,9 @@ SQL;
 					add_post_meta($postID, '_utw_tags_' . $limit, "no tags");
 				}
 			}
+			if ($tags == "no tags") {
+				$tags = array();
+			}
 			$_posttagcache[$postID . ':' . $limit] = $tags;
 
 			return $tags;
