@@ -2,8 +2,8 @@
 /*
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
-Description: Ultimate Tag Warrior is a tagging pluging, that's heavy on tag visualisation.
-Version: 3.14159
+Description: Ultimate Tag Warrior is a tagging plugin, that's heavy on tag visualisation.  I Like Pi!
+Version: 3.141592
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */

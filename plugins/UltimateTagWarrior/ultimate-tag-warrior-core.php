@@ -275,7 +275,7 @@ SQL;
 
 		$default = get_option('default_category');
 
-		$categories = $wpdb->get_results("SELECT c.cat_name FROM $wpdb->post2cat p2c INNER JOIN $wpdb->categories c ON p2c.category_id = c.cat_id WHERE p2c.post_id = $postID AND c.cat_ID != $default");
+		$categories = $wpdb->get_results("SELECT c.cat_name FROM $wpdb->post2cat p2c INNER JOIN $wpdb->categories c ON p2c.category_id = c.cat_id WHERE p2c.post_id = $postID");
 		$tags = $this->GetTagsForPost($postID);
 
 		$alltags = array();
@@ -542,6 +542,8 @@ SQL;
 				$tags = $wpdb->get_results($q);
 				if (count($tags) > 0) {
 					add_post_meta($postID, '_utw_tags_' . $limit, $tags);
+				} else {
+					add_post_meta($postID, '_utw_tags_' . $limit, "no tags");
 				}
 			}
 			$_posttagcache[$postID . ':' . $limit] = $tags;
@@ -1421,7 +1423,7 @@ SQL;
 			$default .= "<a href=\"javascript:sndReq('expand$relStr', '%tag%', '%postid%', '$formattype')\">&raquo;</a> </span>";
 			$aft .= "</span>";
 
-			$predefinedFormats["superajax"] = array("pre"=>"<span id=\"tags-%postid%\">","default"=>$default, "post"=>"$aft");;
+			$predefinedFormats["superajax"] = array("pre"=>"<script src=\"" . $this->GetAjaxJavascriptUrl() . "\" type=\"text/javascript\"></script><span id=\"tags-%postid%\">","default"=>$default, "post"=>"$aft");;
 			$predefinedFormats["superajaxitem"] = $default;
 			$predefinedFormats["superajaxrelated"] = $default;
 			$predefinedFormats["superajaxrelateditem"] = $default;
@@ -1515,6 +1517,14 @@ CSS;
 		}
 
 		return intval($fontsize) . $fontunits;
+	}
+	
+	function GetAjaxJavascriptUrl() {
+		global $install_directory, $wp_query;
+
+		$rpcurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
+		$jsurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax-js.php";
+		return "$jsurl?ajaxurl=$rpcurl";
 	}
 }
 

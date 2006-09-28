@@ -475,8 +475,8 @@ function ultimate_tag_templates() {
 		ultimate_get_posts();
 
 		if (is_feed()) {
-				do_feed();
-				return;
+
+			return;
 		}
 		if (file_exists(TEMPLATEPATH . "/tag.php")) {
 			if ( $_GET["feed"] == '') {
@@ -725,18 +725,21 @@ function ultimate_add_tags_to_rss($the_list, $type="") {
 }
 
 function ultimate_add_ajax_javascript() {
-	global $install_directory, $wp_query;
+	global $install_directory, $wp_query, $utw;
 
 	if (get_query_var('tag') != "") {
 		$wp_query->is_home = false;
 	}
 
-	$rpcurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax.php";
-	$jsurl = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-ajax-js.php";
-	$js = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-js.php";
-	echo "<script src=\"$jsurl?ajaxurl=$rpcurl\" type=\"text/javascript\"></script>";
-	echo "<script src=\"$js\" type=\"text/javascript\"></script>";
+	echo "<script src=\"" . $utw->GetAjaxJavascriptUrl() . "\" type=\"text/javascript\"></script>";
 
+}
+
+function ultimate_add_admin_javascript() {
+	global $install_directory;
+	
+	$js = get_option('siteurl') . "/wp-content/plugins$install_directory/ultimate-tag-warrior-js.php";
+	echo "<script src=\"$js\" type=\"text/javascript\"></script>";
 }
 
 function ultimate_add_meta_keywords() {
@@ -840,7 +843,7 @@ add_filter('query_vars', array('UltimateTagWarriorActions','ultimate_query_vars'
 add_filter('the_content', array('UltimateTagWarriorActions', 'ultimate_the_content_filter'));
 add_filter('the_category_rss', array('UltimateTagWarriorActions', 'ultimate_add_tags_to_rss'));
 
-add_filter('wp_head', array('UltimateTagWarriorActions', 'ultimate_add_ajax_javascript'));
 add_filter('wp_head', array('UltimateTagWarriorActions', 'ultimate_add_meta_keywords'));
+add_filter('admin_head', array('UltimateTagWarriorActions', 'ultimate_add_admin_javascript'));
 add_filter('admin_head', array('UltimateTagWarriorActions', 'ultimate_add_ajax_javascript'));
 ?>
