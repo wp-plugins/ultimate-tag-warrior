@@ -1,4 +1,4 @@
-<?php $ajaxurl = $_GET['ajaxurl'] ?>
+<?php $ajaxurl = addslashes(strip_tags(urldecode($_GET['ajaxurl']))) ?>
 function createRequestObject() {
 	var ro;
 	var browser = navigator.appName;

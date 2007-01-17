@@ -499,6 +499,7 @@ $_POST['tagset'] the list of tags.
 function ultimate_save_tags($postID)
 {
 	global $wpdb, $table_prefix, $utw, $starttag, $endtag, $starttags, $endtags, $embedtags, $utw;
+	if (isset($_POST['comment_post_ID'])) return $postID;
 
 	$tags = $wpdb->escape($_POST['tagset']);
 	$tags = explode(',',$tags);
@@ -646,7 +647,7 @@ function ultimate_the_content_filter($thecontent='') {
 		$thecontent = preg_replace_callback($findTagRegEx, array("UltimateTagWarriorActions","replaceTagWithLink"), $thecontent);
 	}
 
-	if (get_option('utw_include_local_links') != 'No' && get_option('utw_include_local_links') != 'no' ) {
+	if (!is_feed() && get_option('utw_include_local_links') != 'No' && get_option('utw_include_local_links') != 'no' ) {
 		if (get_option('utw_primary_automagically_included_link_format') != '') {
 			$custom = array();
 			if (get_option('utw_primary_automagically_included_prefix') != '') {
@@ -657,7 +658,7 @@ function ultimate_the_content_filter($thecontent='') {
 			}
 
 			$format = $utw->GetFormat(get_option('utw_primary_automagically_included_link_format'), $custom);
-			$tagHTML = $utw->FormatTags($tags, $format);
+			$tagHTML = '<span class="UTWPrimaryTags">' . $utw->FormatTags($tags, $format) . '</span>';
 
 			if (get_option('utw_include_local_links') == 'Before Content') {
 				$thecontent = $tagHTML . $thecontent;
@@ -671,7 +672,7 @@ function ultimate_the_content_filter($thecontent='') {
 		}
 	}
 
-	if (get_option('utw_include_technorati_links') != 'No' && get_option('utw_include_technorati_links') != 'no') {
+	if (!is_feed() && get_option('utw_include_technorati_links') != 'No' && get_option('utw_include_technorati_links') != 'no') {
 		if (get_option('utw_secondary_automagically_included_link_format') != '') {
 			$custom = array();
 			if (get_option('utw_secondary_automagically_included_prefix') != '') {
@@ -682,7 +683,7 @@ function ultimate_the_content_filter($thecontent='') {
 			}
 
 			$format = $utw->GetFormat(get_option('utw_secondary_automagically_included_link_format'), $custom);
-			$tagHTML = $utw->FormatTags($tags, $format);
+			$tagHTML = '<span class="UTWSecondaryTags">' . $utw->FormatTags($tags, $format) . '</span>';
 
 			if (get_option('utw_include_technorati_links') == 'Before Content') {
 				$thecontent = $tagHTML . $thecontent;
@@ -711,17 +712,17 @@ function ultimate_the_content_filter($thecontent='') {
 function ultimate_add_tags_to_rss($the_list, $type="") {
 	global $post, $utw;
 
-    $categories = get_the_category();
-    $the_list = '';
-    foreach ($categories as $category) {
-        $category->cat_name = convert_chars($category->cat_name);
-        $the_list .= "\n\t<dc:subject>" . $category->cat_name . "</dc:subject>";
-    }
-
-	$format="<dc:subject>%tagdisplay%</dc:subject>";
-	echo $the_list;
+	if ($type == 'rdf' || $type = 'atom'){
+		$format="<dc:subject>%tagdisplay%</dc:subject>";
+	} else {
+		$format="<category>%tagdisplay%</category>";
+	} 
 	$tags = $utw->FormatTags($utw->GetTagsForPost($post->ID), $format);
-	echo str_replace('&', '&amp;', $tags);
+	$tags = str_replace('&', '&amp;', $tags);
+
+	$the_list .= $tags;
+
+	return $the_list;
 }
 
 function ultimate_add_ajax_javascript() {
@@ -791,11 +792,47 @@ function ultimate_posts_where($where) {
 	}
 	return $where;
 }
+function ultimate_posts_groupby($groupby) {
+	if(is_tag() || is_search()) {
+		if ($groupby == '') {
+			$groupby = $wpdb->posts.ID;
+		} else if (strpos($groupby,$wpdb->posts.ID) == false || strpos($groupby,'posts.ID') == false) {
+			// do nothing.
+		} else {
+			// add to the end
+			$groupby .= ',' . $wpdb->posts.ID;
+		}
+	}
+	return $groupby;
+}
 
 function ultimate_query_vars($vars) {
 	$vars[] = 'tag';
 
 	return $vars;
+}
+
+function ultimate_search_where($where) {
+	if (is_search()) {
+		global $table_prefix, $wpdb, $wp_query;
+		$tabletags = $table_prefix . "tags";
+		$tablepost2tag = $table_prefix . "post2tag";
+
+		$where .= " OR $tabletags.tag like '%" . $wp_query->query_vars['s'] . "%'";
+	}
+	return $where;
+}
+
+function ultimate_search_join($join) {
+	if (is_search()) {
+		global $table_prefix, $wpdb;
+
+		$tabletags = $table_prefix . "tags";
+		$tablepost2tag = $table_prefix . "post2tag";
+
+		$join .= " LEFT JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags on p2t.tag_id = $tabletags.tag_id ";
+	}
+	return $join;
 }
 
 /* Maaaaaybe some day...
@@ -820,6 +857,7 @@ add_action('admin_menu', array('UltimateTagWarriorActions', 'ultimate_admin_menu
 // Add or edit tags
 add_action('simple_edit_form', array('UltimateTagWarriorActions','ultimate_display_tag_widget'));
 add_action('edit_form_advanced', array('UltimateTagWarriorActions','ultimate_display_tag_widget'));
+add_action('edit_page_form', array('UltimateTagWarriorActions','ultimate_display_tag_widget'));
 
 // Save changes to tags
 add_action('publish_post', array('UltimateTagWarriorActions','ultimate_save_tags'));
@@ -834,14 +872,18 @@ add_action('template_redirect', array('UltimateTagWarriorActions','ultimate_tag_
 
 add_filter('posts_join', array('UltimateTagWarriorActions','ultimate_posts_join'));
 add_filter('posts_where', array('UltimateTagWarriorActions','ultimate_posts_where'));
+add_filter('posts_groupby', array('UltimateTagWarriorActions','ultimate_posts_groupby'));
 // add_filter('posts_having',array('UltimateTagWarriorActions','ultimate_posts_having'));
+
+add_filter('posts_join', array('UltimateTagWarriorActions','ultimate_search_join'));
+add_filter('posts_where', array('UltimateTagWarriorActions','ultimate_search_where'));
 
 // URL rewriting
 add_filter('rewrite_rules_array', array('UltimateTagWarriorActions','ultimate_rewrite_rules'));
 add_filter('query_vars', array('UltimateTagWarriorActions','ultimate_query_vars'));
 
 add_filter('the_content', array('UltimateTagWarriorActions', 'ultimate_the_content_filter'));
-add_filter('the_category_rss', array('UltimateTagWarriorActions', 'ultimate_add_tags_to_rss'));
+add_filter('the_category_rss', array('UltimateTagWarriorActions', 'ultimate_add_tags_to_rss'), 2, 2);
 
 add_filter('wp_head', array('UltimateTagWarriorActions', 'ultimate_add_meta_keywords'));
 add_filter('admin_head', array('UltimateTagWarriorActions', 'ultimate_add_admin_javascript'));

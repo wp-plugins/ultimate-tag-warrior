@@ -273,8 +273,6 @@ SQL;
 
 		if (!is_numeric($postID)) return;
 
-		$default = get_option('default_category');
-
 		$categories = $wpdb->get_results("SELECT c.cat_name FROM $wpdb->post2cat p2c INNER JOIN $wpdb->categories c ON p2c.category_id = c.cat_id WHERE p2c.post_id = $postID");
 		$tags = $this->GetTagsForPost($postID);
 
@@ -1402,6 +1400,7 @@ SQL;
 			$predefinedFormats["commalist"] = array ("default"=>", %taglink%", "first"=>"%taglink%", "none"=>$notagtext );
 			$predefinedFormats["commalistwithtaglabel"] = array ("single"=>"Tag:  %taglink%", "default"=>", %taglink%", "first"=>"Tags: %taglink%", "none"=>$notagtext );
 			$predefinedFormats["commalisticons"] = array ("default"=>", %taglink% %icons%", "first"=>"%taglink% %icons%", "none"=>$notagtext );
+			$predefinedFormats["invisibletechnoraticommalist"] = array ("pre"=>'<span style="display:none">', "default"=>", %technoratitag%", "first"=>"%technoratitag%", 'post'=>'</span>' );
 			$predefinedFormats["technoraticommalist"] = array ("default"=>", %technoratitag%", "first"=>"%technoratitag%", "none"=>$notagtext );
 			$predefinedFormats["technoraticommalistwithlabel"] = array ("default"=>", %technoratitag%", "first"=>"Technorati Tags: %technoratitag%", "none"=>$notagtext );
 			$predefinedFormats["technoraticommalistwithiconlabel"] = array ("default"=>", %technoratitag%", "first"=>"<a href=\"http://www.technorati.com/tag/\"><img src=\"$siteurl/wp-content/plugins$install_directory/technoratiicon.jpg\" alt=\"Technorati\"/></a> %technoratitag%", "none"=>$notagtext );
@@ -1558,9 +1557,9 @@ function ultimate_get_posts() {
 
 	$tags = array_unique($tags);
 	$tagcount = count($tags);
-
+	
 	if (strpos($request, "HAVING COUNT(ID)") == false && !$or_query) {
-		$request = preg_replace("/GROUP BY +$wpdb->posts.ID /", "GROUP BY $wpdb->posts.ID HAVING COUNT(ID) = $tagcount ", $request);
+		$request = preg_replace("/ORDER BY/", "HAVING COUNT(ID) = $tagcount ORDER BY", $request);
 	}
 
 	$posts = $wpdb->get_results($request);
