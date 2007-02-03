@@ -32,7 +32,7 @@ function ultimate_rewrite_rules($rules) {
 
 		global $wp_rewrite;
 
-		$wp_rewrite->add_rewrite_tag('%tag%', '(.*)', 'tag=');
+               	$wp_rewrite->add_rewrite_tag('%tag%', '([^/]+)', 'tag=');
 
 		// without trailing slash
 		$rules = $wp_rewrite->generate_rewrite_rules($baseurl . '%tag%') + $rules;
@@ -499,7 +499,20 @@ $_POST['tagset'] the list of tags.
 function ultimate_save_tags($postID)
 {
 	global $wpdb, $table_prefix, $utw, $starttag, $endtag, $starttags, $endtags, $embedtags, $utw;
+
+	/* Fix from Mark Jaquith using nonces */
+	if ( !current_user_can('edit_post', $postID) )
+		return $post_id;
+	// origination and intention
+	if ( !wp_verify_nonce($_POST['utw-verify-key'], 'utw') )
+		return $postID;
+
+	/* I'll defensively leave these here just in case. */
 	if (isset($_POST['comment_post_ID'])) return $postID;
+        if (isset($_POST['not_spam'])) return $postID; // akismet fix
+        if (isset($_POST["comment"])) return $postID; // moderation.php fix
+	if (!isset($_POST['tagset'])) return $postID; // if there's no tags passed in anyway...
+
 
 	$tags = $wpdb->escape($_POST['tagset']);
 	$tags = explode(',',$tags);
@@ -594,7 +607,7 @@ function ultimate_display_tag_widget() {
 	}
   $suggestions .='<input type="button" onClick="askYahooForKeywords()" value="Get Keyword Suggestions From Yahoo"/>';
   $suggestions .='<div id="yahooSuggestedTags"></div>';
-
+  echo '<input type="hidden" name="utw-verify-key" id="utw-verify-key" value="' . wp_create_nonce('utw') . '" />';
   echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tags (comma separated list)</h3><div class="dbx-content">' . $widget . '</div></fieldset>';
   echo '<fieldset id="tagsdiv" class="dbx-box">' . '<h3 class="dbx-handle">Tag Suggestions (Courtesy of <a href="http://www.yahoo.com">Yahoo!</a>)</h3><div class="dbx-content">' . $suggestions . '</div></fieldset>';
 
@@ -712,7 +725,7 @@ function ultimate_the_content_filter($thecontent='') {
 function ultimate_add_tags_to_rss($the_list, $type="") {
 	global $post, $utw;
 
-	if ($type == 'rdf' || $type = 'atom'){
+	if ($type == 'rdf'){
 		$format="<dc:subject>%tagdisplay%</dc:subject>";
 	} else {
 		$format="<category>%tagdisplay%</category>";
@@ -793,7 +806,7 @@ function ultimate_posts_where($where) {
 	return $where;
 }
 function ultimate_posts_groupby($groupby) {
-	if(is_tag() || is_search()) {
+	if(is_utwtag() || is_search()) {
 		if ($groupby == '') {
 			$groupby = $wpdb->posts.ID;
 		} else if (strpos($groupby,$wpdb->posts.ID) == false || strpos($groupby,'posts.ID') == false) {
@@ -879,7 +892,7 @@ add_filter('posts_join', array('UltimateTagWarriorActions','ultimate_search_join
 add_filter('posts_where', array('UltimateTagWarriorActions','ultimate_search_where'));
 
 // URL rewriting
-add_filter('rewrite_rules_array', array('UltimateTagWarriorActions','ultimate_rewrite_rules'));
+add_filter('rewrite_rules_array', array('UltimateTagWarriorActions','ultimate_rewrite_rules'),100);
 add_filter('query_vars', array('UltimateTagWarriorActions','ultimate_query_vars'));
 
 add_filter('the_content', array('UltimateTagWarriorActions', 'ultimate_the_content_filter'));

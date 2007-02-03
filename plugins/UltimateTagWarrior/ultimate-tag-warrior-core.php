@@ -30,7 +30,8 @@ $_tagcache = array();
 $_posttagcache = array();
 $_relatedtagsmap = array();
 
-$typelimitsql = "(post_status = 'publish' OR post_status = 'static')";  // include pages
+$typelimitsql = "(post_type = 'post' OR post_type = 'page')";  // include pages
+$typelimitsql = "(post_type = 'post')";  // don't include pages - comment this out if you want!!
 
 class UltimateTagWarriorCore {
 
@@ -1535,7 +1536,7 @@ CSS;
 Retrieves the posts for the tags specified in get_query_var("tag").  Gets the intersection when there are multiple tags.
 */
 function ultimate_get_posts() {
-	global $wpdb, $table_prefix, $posts, $id, $wp_query, $request, $utw;
+	global $wpdb, $table_prefix, $posts, $id, $wp_query, $request, $utw, $typelimitsql;
 	$tabletags = $table_prefix . 'tags';
 	$tablepost2tag = $table_prefix . "post2tag";
 
@@ -1561,6 +1562,7 @@ function ultimate_get_posts() {
 	if (strpos($request, "HAVING COUNT(ID)") == false && !$or_query) {
 		$request = preg_replace("/ORDER BY/", "HAVING COUNT(ID) = $tagcount ORDER BY", $request);
 	}
+	$request = preg_replace("/post_type = 'post'/","$typelimitsql", $request);
 
 	$posts = $wpdb->get_results($request);
 	// As requested by Splee and copperleaf

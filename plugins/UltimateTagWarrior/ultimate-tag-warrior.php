@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: Ultimate Tag Warrior is a tagging plugin, that's heavy on tag visualisation.  I Like Pi!
-Version: 3.1415926
+Version: 3.14159265
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -101,7 +101,7 @@ function UTW_ShowTimeSensitiveWeightedTagSetAlphabetical($formattype, $format=""
 function UTW_ShowMetaKeywords() {
 	global $utw, $post;
 
-	if (is_tag()) {
+	if (is_utwtag()) {
 		echo '<meta name="keywords" content="' . $utw->FormatTags($utw->GetCurrentTagSet(),array('first'=>'%tagdisplay%', 'default'=> ', %tagdisplay%')) . '" />';
     } else if (is_single()) {
 	    echo '<meta name="keywords" content="' . $utw->FormatTags($utw->GetTagsForPost($post->ID),array('first'=>'%tagdisplay%', 'default'=> ', %tagdisplay%')) . '" />';
@@ -122,19 +122,26 @@ function UTW_HasTags() {
 	return (bool)$utw->GetPostHasTags($post->ID);
 }
 
-function is_tag() {
-	global $utw;
+if(!function_exists('is_tag')) {
+	function is_tag() {
+		return is_utwtag();
+	}
+}
 
+function is_utwtag() {
+	global $utw;
 	return (count($utw->GetCurrentTagSet()) > 0);
 }
 
 /* if $format is passed in,  then the tags will replace the contents of the div named "tags-{tagid}" with a new tag list using the named format.  Otherwise, it'll just add the tag. */
 function UTW_AddTagToCurrentPost($format="", $minimumuserlevel = 3) {
-	global $post, $user_level;
+	global $post, $user_level, $utw;
 
 	if ($user_level < $minimumuserlevel) { return; }
 
 	$postid = $post->ID;
+	// drop in javascript
+	echo "<script src=\"" . $utw->GetAjaxJavascriptUrl() . "\" type=\"text/javascript\"></script>";
 	if ($format=="") {
 	?><input type="text" size="9" id="soloAddTag-<?php echo $postid ?>" /> <input type="button" value="+" onClick="sndReqNoResp('add', document.getElementById('soloAddTag-<?php echo  $postid ?>').value, '<?php echo  $postid ?>')" /><?php
 	} else {
