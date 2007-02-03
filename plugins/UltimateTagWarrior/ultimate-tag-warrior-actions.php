@@ -724,9 +724,12 @@ function ultimate_the_content_filter($thecontent='') {
 
 function ultimate_add_tags_to_rss($the_list, $type="") {
 	global $post, $utw;
+	$home = get_bloginfo_rss('home');
 
 	if ($type == 'rdf'){
 		$format="<dc:subject>%tagdisplay%</dc:subject>";
+	} else if ( 'atom' == $type ) {
+		$format = "<category scheme='$home' term='%tagdisplay%' />";
 	} else {
 		$format="<category>%tagdisplay%</category>";
 	} 
