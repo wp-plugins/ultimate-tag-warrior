@@ -834,7 +834,11 @@ function ultimate_search_where($where) {
 		$tabletags = $table_prefix . "tags";
 		$tablepost2tag = $table_prefix . "post2tag";
 
-		$where .= " OR $tabletags.tag like '%" . $wp_query->query_vars['s'] . "%'";
+		$searchInput = $wp_query->query_vars['s'];
+		$searchInput = str_replace(' ', '-', $searchInput);
+		$searchInput = str_replace('"', '', $searchInput);
+		$searchInput = str_replace("'", '', $searchInput);
+		$where .= " OR $tabletags.tag like '%" . $searchInput . "%'";
 	}
 	return $where;
 }
@@ -846,7 +850,8 @@ function ultimate_search_join($join) {
 		$tabletags = $table_prefix . "tags";
 		$tablepost2tag = $table_prefix . "post2tag";
 
-		$join .= " LEFT JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags on p2t.tag_id = $tabletags.tag_id ";
+		$join .= " LEFT JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id LEFT JOIN $tabletags on p2t.tag_id = $tabletags.tag_id ";
+
 	}
 	return $join;
 }

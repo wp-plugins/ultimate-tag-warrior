@@ -1391,7 +1391,7 @@ SQL;
 			$siteurl = get_option('siteurl');
 
 			$predefinedFormats["tagsetsimplelist"] = array('first'=>'%taglink%', 'default'=>' %operatortext% %taglink%');
-			$predefinedFormats["tagsetcommalist"] = array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>' %operatortext% %taglink%');
+			$predefinedFormats["tagsetcommalist"] = array('first'=>'%taglink%', 'default'=>', %taglink%', 'last'=>', %operatortext% %taglink%');
 			$predefinedFormats["tagsettextonly"] = array('first'=>'%tagdisplay%','default'=>', %tagdisplay%','last'=>' %operatortext% %tagdisplay%');
 			$predefinedFormats["simplelist"] = array ("default"=>"%taglink% ", "none"=>$notagtext );
 			$predefinedFormats["iconlist"] = array ("default"=>"%taglink% %icons% ", "none"=>$notagtext );

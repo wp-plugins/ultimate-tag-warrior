@@ -3,7 +3,7 @@
 Plugin Name: Ultimate Tag Warrior
 Plugin URI: http://www.neato.co.nz/ultimate-tag-warrior/
 Description: Ultimate Tag Warrior is a tagging plugin, that's heavy on tag visualisation.  I Like Pi!
-Version: 3.14159265
+Version: 3.141592653
 Author: Christine Davis
 Author URI: http://www.neato.co.nz
 */
@@ -66,7 +66,7 @@ function UTW_ShowCurrentTagSet($formattype, $format="", $limit = 0) {
 	echo $utw->FormatTags($utw->GetCurrentTagSet(), $format, $limit);
 }
 
-function UTW_ShowWeightedTagSet($formattype, $format="", $limit=150) {
+function UTW_ShowWeightedTagSet($formattype, $format="", $limit=0) {
 	global $utw;
 
 	$format = $utw->GetFormat($formattype, $format);
@@ -74,7 +74,7 @@ function UTW_ShowWeightedTagSet($formattype, $format="", $limit=150) {
 	echo $utw->FormatTags($utw->GetWeightedTags("weight", "desc", $limit), $format);
 }
 
-function UTW_ShowTimeSensitiveWeightedTagSet($formattype, $format="", $limit=150) {
+function UTW_ShowTimeSensitiveWeightedTagSet($formattype, $format="", $limit=0) {
 	global $utw;
 
 	$format = $utw->GetFormat($formattype, $format);
@@ -82,7 +82,7 @@ function UTW_ShowTimeSensitiveWeightedTagSet($formattype, $format="", $limit=150
 	echo $utw->FormatTags($utw->GetWeightedTags("weight", "desc", $limit, true), $format);
 }
 
-function UTW_ShowWeightedTagSetAlphabetical($formattype, $format="", $limit=150) {
+function UTW_ShowWeightedTagSetAlphabetical($formattype, $format="", $limit=0) {
 	global $utw;
 
 	$format = $utw->GetFormat($formattype, $format);
@@ -90,7 +90,7 @@ function UTW_ShowWeightedTagSetAlphabetical($formattype, $format="", $limit=150)
 	echo $utw->FormatTags($utw->GetWeightedTags("tag", "asc", $limit), $format);
 }
 
-function UTW_ShowTimeSensitiveWeightedTagSetAlphabetical($formattype, $format="", $limit=150) {
+function UTW_ShowTimeSensitiveWeightedTagSetAlphabetical($formattype, $format="", $limit=0) {
 	global $utw;
 
 	$format = $utw->GetFormat($formattype, $format);
