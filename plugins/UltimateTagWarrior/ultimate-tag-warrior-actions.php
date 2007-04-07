@@ -324,6 +324,13 @@ function ultimate_better_admin() {
 				echo "<div class=\"updated\"><p>Could not export tags to custom field</p></div>";
 			}
 		}
+		if ($_GET["updateaction"] == __("Export to Wordpress Tags", $lzndomain)) {
+			$postids = $wpdb->get_results("SELECT id FROM $wpdb->posts");
+			foreach ($postids as $postid) {
+				$tags = $utw->FormatTags($utw->GetTagsForPost($postid->id, -1), '%tagdisplay%,');
+				wp_set_post_tags($postid->id, $tags);
+			}
+		}
 	}
 
 	echo "<fieldset class=\"options\"><legend>" . __("Help!", $lzndomain) . "</legend><a href=\"$siteurl/wp-content/plugins$install_directory/ultimate-tag-warrior-help.html\" target=\"_new\">" . __("Local help", $lzndomain) . "</a> | <a href=\"http://www.neato.co.nz/ultimate-tag-warrior\" target=\"_new\">" . __("Author help", $lzndomain) . "</a> | <a href=\"./options-general.php?page=ultimate-tag-warrior-actions.php\">Configuration</a></fieldset>";
@@ -386,6 +393,13 @@ OPTIONS;
 	echo '<fieldset class="options"><legend>' . __("Import Embedded Tags", $lzndomain) . '</legend>';
 	_e('<p>Also very scary.. back up your database first!</p>');
 	echo '<input type="submit" name="updateaction" onClick="javascript:return(confirm(\'' . __('Are you sure you want to import embedded tags?', $lzndomain) . '\'))" value="' . __("Import Embedded Tags", $lzndomain) . '"></fieldset>';
+
+	// only include this for versions of wordpress that support it.
+	if (function_exists('wp_set_post_tags')) {
+		echo '<fieldset class="options"><legend>' . __("Export to Wordpress Tags", $lzndomain) . '</legend>';
+		_e('<p>Also very scary.. back up your database first!</p>');
+		echo '<input type="submit" name="updateaction" onClick="javascript:return(confirm(\'' . __('Are you sure you want to export tags to wordpress?', $lzndomain) . '\'))" value="' . __("Export to Wordpress Tags", $lzndomain) . '"></fieldset>';
+	}
 
 	echo '<fieldset class="options"><legend>' . __('Custom Fields', $lzndomain) . '</legend>';
 	_e('<p>This pair of actions allow the moving of tag information from custom fields into the tag structure,  and moving the tag structure into a custom field.</p><p>When moving information from the custom field to the tag structure,  the existing tags are retained.  However, copying the tags to the custom field <strong>will overwrite the existing values</strong>.  To retain the existing values,  do an import before the export.</p><p><strong>This stuff seems to work,  but backup your database before trying,  just in case.</strong></p>', $lzndomain);
@@ -834,11 +848,10 @@ function ultimate_search_where($where) {
 		$tabletags = $table_prefix . "tags";
 		$tablepost2tag = $table_prefix . "post2tag";
 
-		$searchInput = $wp_query->query_vars['s'];
-		$searchInput = str_replace(' ', '-', $searchInput);
-		$searchInput = str_replace('"', '', $searchInput);
-		$searchInput = str_replace("'", '', $searchInput);
-		$where .= " OR $tabletags.tag like '%" . $searchInput . "%'";
+		$search = $wp_query->query_vars['s'];
+		foreach (explode(' ',$search) as $term) {
+			$where .= " OR $tabletags.tag = '" . sanitize_title($term) . "'";
+		}
 	}
 	return $where;
 }
@@ -850,8 +863,7 @@ function ultimate_search_join($join) {
 		$tabletags = $table_prefix . "tags";
 		$tablepost2tag = $table_prefix . "post2tag";
 
-		$join .= " LEFT JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id LEFT JOIN $tabletags on p2t.tag_id = $tabletags.tag_id ";
-
+		$join .= " LEFT JOIN $tablepost2tag p2t on $wpdb->posts.ID = p2t.post_id INNER JOIN $tabletags on p2t.tag_id = $tabletags.tag_id ";
 	}
 	return $join;
 }
